@@ -8,10 +8,18 @@ imgurbash2 is a simple script that allows you to upload images to [imgur](https:
 ```
 
 ## Installation
+
+### Linux / UN*X
 ```
 curl https://raw.githubusercontent.com/ram-on/imgurbash2/master/imgurbash2 > imgurbash2
 chmod u+x imgurbash2
 ```
+
+### Arch Linux / Manjaro / Antergos
+```
+yaourt -S imgurbash2
+```
+
 
 ## Dependencies
 | Program            | Optional | Reason |
