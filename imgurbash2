@@ -1,33 +1,80 @@
 #!/bin/bash
+# Copyright (c) 2016 Ramon <https://github.com/ram-on/imgurbash2>
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 #
 #--------------------------------------------------------------------
-# AUTHORS:  Modified by Ramon <https://github.com/ram-on/imgurbash2>
+# AUTHORS:  Ramon <https://github.com/ram-on/imgurbash2>
 #           Originally written by Bart Nagel <bart@tremby.net>
-# RELEASE:  2016-04-04
-# LICENSE:  MIT
-#--------------------------------------------------------------------
-#
+# VERSION:  2.0
 # REQUIRED: curl
-# OPTIONAL: xsel or xclip for automatically putting the URLs on the X selection 
-#           for easy pasting
-#
-# UPLOAD AN IMAGE:
-#    bash imgurbash2 images/hilarious/moo.jpg
-#
-# UPLOAD MULTIPLE IMAGES:
-#    bash imgurbash2 images/delicious/cake.png images/exciting/bungeejump.jpg
+# OPTIONAL: xsel or xclip for copying URLs to your clipboard.
+#--------------------------------------------------------------------
 #
 # The URLs will be outputted on your terminal. If you have xsel or xclip the
 # URLs will also be put on the X selection, which you can usually paste with a CTRL-V.
 
+
 # function to output usage instructions
 function usage {
-	echo "Usage: $(basename $0) <filename> [<filename> [...]]" >&2
-	echo "Upload images to imgur and output their new URLs to stdout. Each one's" >&2
-	echo "delete page is output to stderr between the view URLs." >&2
-	echo "If xsel or xclip is available, the URLs are put on the X selection for" >&2
-	echo "easy pasting." >&2
+	echo "Uploads images to imgur and output their imgurl URL link.  If xsel or xclip is" >&2
+	echo "available, the links are copied to your clipboard." >&2
+	echo "" >&2
+	echo "Usage:" >&2
+	echo "    $(basename $0) <image_1> [<image_2> [...]]" >&2
+	echo "" >&2
+	echo "Where:" >&2
+	echo "    image_num   A local image file or a remote image (i.e. http/https)." >&2
 }
+
+
+# Returns true if the image is stored on a remote machine (i.e. http or https
+# or ftp);  false otherwise.
+function is_remote_image() {	
+	if [ $(grep -i -E "^(http[s]?|ftp)://.+" <<< "$1")  ]; then
+		return $(true)
+	else
+		return $(false)
+	fi
+}
+
+
+# Uploads image to imgur
+function upload_image() {
+	clientid='1923eac1555838e'
+	file="$1"
+
+	# if the image is stored remotely...
+	if is_remote_image "$file"; then
+		curl -sH "Authorization: Client-ID $clientid" --data-urlencode "image=$file" "https://api.imgur.com/3/upload"
+		
+	# else if the local image file exists on disk...
+	elif [ -f "$file" ]; then
+		curl -sH "Authorization: Client-ID $clientid" -F "image=@$file" "https://api.imgur.com/3/upload"
+	
+	# else the file does not exist
+	else
+		echo '"error":"File does not exist, skipping"'
+	fi
+}
+
+
 
 # check arguments
 if [ "$1" = "-h" -o "$1" = "--help" ]; then
@@ -35,6 +82,7 @@ if [ "$1" = "-h" -o "$1" = "--help" ]; then
 	exit 0
 elif [ $# == 0 ]; then
 	echo "No file specified" >&2
+	echo "" >&2
 	usage
 	exit 16
 fi
@@ -47,32 +95,26 @@ type curl >/dev/null 2>/dev/null || {
 
 clip=""
 errors=false
-clientid='3e7a4deb7ac67da'
 
 # loop through arguments
 while [ $# -gt 0 ]; do
 	file="$1"
 	shift
 
-	# check file exists
-	if [ ! -f "$file" ]; then
-		echo "file '$file' doesn't exist, skipping" >&2
-		errors=true
-		continue
-	fi
-
 	# upload the image
-	response=$(curl -sH "Authorization: Client-ID $clientid" -F "image=@$file" "https://api.imgur.com/3/upload")
-	#echo "$response"
+	response=$(upload_image "$file")
 	
+	# get image url link
 	echo $response | grep -qo '"status":200' && url=$(echo $response | sed -e 's/.*"link":"\([^"]*\).*/\1/' -e 's/\\//g')
 	
 	if [ -z "$url" ]; then
-		echo "Upload failed" >&2
+		errormsg=$(echo $response | sed -e 's/.*"error":"\([^"]*\).*/\1/')
+		echo "Upload failed for $file:  $errormsg" >&2
 		errors=true
 		continue
 	fi
 
+	# output the URL
 	echo $url
 
 	# append the URL to a string so we can put them all on the clipboard later
@@ -83,7 +125,7 @@ done
 # put the URLs on the clipboard if we have xsel or xclip
 if [ $DISPLAY ]; then
 	{ type xsel >/dev/null 2>/dev/null && echo -n $clip | xsel --clipboard; } \
-		|| { type xclip >/dev/null 2>/dev/null && echo -n $clip | xclip; } \
+		|| { type xclip >/dev/null 2>/dev/null && echo -n $clip | xclip -sel "clip"; } \
 		|| echo "Haven't copied to the clipboard: no xsel or xclip" >&2
 else
 	echo "Haven't copied to the clipboard: no \$DISPLAY" >&2
