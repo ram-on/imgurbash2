@@ -3,12 +3,17 @@ imgurbash2 is a simple script that allows you to upload images to [imgur](https:
 
 ## Usage
 ```
-./imgurbash2 cow.png            # uploads cow.png to imgur
-./imgurbash2 cow.png bee.jpg    # uploads cow.png and bee.jpg to imgur
+# upload cow.png to imgur
+imgurbash2 cow.png
+
+# upload cow.png and bee.jpg to imgur
+imgurbash2 cow.png bee.jpg
+
+# upload the remote image fish.png and lion.png to imgur
+imgurbash2 https://myserver.org/fish.png lion.png
 ```
 
 ## Installation
-
 ### Linux / UN*X
 ```
 curl https://raw.githubusercontent.com/ram-on/imgurbash2/master/imgurbash2 > imgurbash2
@@ -20,12 +25,11 @@ chmod u+x imgurbash2
 yaourt -S imgurbash2
 ```
 
-
 ## Dependencies
 | Program            | Optional | Reason |
 | ------------------ | -------- | ------------- |
-| `curl`             | No       | To upload images  |
-| `xcel` or `xclip`  | Yes      | To copy URL (image) link to clipboard |
+| `curl`             | No       | Uploads images  |
+| `xsel` or `xclip`  | Yes      | Copies URL (image) link to clipboard |
 
 ## License
-MIT License
+[MIT License](https://raw.githubusercontent.com/ram-on/imgurbash2/master/LICENSE)
