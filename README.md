@@ -1,17 +1,13 @@
 # imgurbash2
-imgurbash2 is a simple script that allows you to upload images to [imgur](https://imgur.com/) using bash.  Once an image is uploaded, the link is displayed on the terminal and copied to your clipboard (see below).
+imgurbash2 is a simple bash script that allows you to upload images to [imgur](https://imgur.com/).  Once an image is uploaded, the link is displayed on the terminal and copied to your clipboard (see below).
 
 ## Usage
-```
-# upload cow.png to imgur
-imgurbash2 cow.png
 
-# upload cow.png and bee.jpg to imgur
-imgurbash2 cow.png bee.jpg
-
-# upload the remote image fish.png and lion.png to imgur
-imgurbash2 https://myserver.org/fish.png lion.png
-```
+| Command                                               | Explanation                                   |
+| :---                                                  | :---                                          |
+| `imgurbash2  cow.png`                                 | Upload the file cow.png to imgur              |
+| `imgurbash2  cow.png  bee.jpg`                        | Upload cow.png and bee.jpg                    |
+| `imgurbash2  https://myserver.org/fish.png  lion.png` | Upload the remote image fish.png and lion.png |
 
 ## Installation
 ### Linux / UN*X
