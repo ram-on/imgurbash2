@@ -31,6 +31,8 @@
 # URLs will also be put on the X selection, which you can usually paste with a CTRL-V.
 
 
+clientid='1923eac1555838e'
+
 #
 # Function to output usage instructions
 #
@@ -41,10 +43,17 @@ function usage {
 	echo "available, the links are copied to your clipboard." >&2
 	echo "" >&2
 	echo "Usage:" >&2
-	echo "    $(basename $0) <image_1> [<image_2> [...]]" >&2
+	echo "    $(basename $0) [option] <image_1> [<image_2>...]" >&2
 	echo "" >&2
 	echo "Where:" >&2
-	echo "    image_num   A local image file or a remote image (i.e. http/https)." >&2
+	echo "    image_num is a local image file or a remote image (i.e. http/https)." >&2
+	echo "" >&2
+	echo "Options:" >&2
+	echo "    -d, --delete <delete_hash_1> [<delete_hash2>...]" >&2
+	echo "        Deletes image(s) based on the the supplied delete hash.  The delete hash" >&2
+	echo "        is outputted when the user uploads an image." >&2
+	echo "    -h, --help" >&2
+	echo "        Displays this help and exit." >&2
 }
 
 
@@ -69,7 +78,6 @@ function is_remote_image() {
 # Parameter:  Image file path or image URL
 #
 function upload_image() {
-	clientid='1923eac1555838e'
 	file="$1"
 
 	# if the image is stored remotely...
@@ -100,6 +108,74 @@ function get_value_from_response() {
 }
 
 
+#
+# Uploads image(s) to imgur.
+#
+function upload_images() {
+	clip=""
+	
+	# loop through arguments
+	for file do
+		# upload the image
+		response=$(upload_image "$file")
+		url=""
+
+		# get image url link
+		grep -qo '"status":200' <<< "$response"  &&  url=$(get_value_from_response "$response" "link" | sed -e 's/\\//g')
+
+		if [ -z "$url" ]; then
+			echo "Upload failed for $file:  "$(get_value_from_response "$response" "error") >&2
+			errors=true
+		else 
+			# output the imgur URL
+			printf '%s    (Delete Hash = %s)\n' "$url" $(get_value_from_response "$response" "deletehash")
+
+			# append the URL to a string so we can put them all on the clipboard later
+			clip="$clip$url
+		"
+		fi
+	done
+
+	# copy the URLs to the clipboard (if the user has xsel or xclip installed)
+	if [ $DISPLAY ]; then
+		{ type xsel >/dev/null 2>/dev/null && echo -n $clip | xsel --clipboard; } \
+			|| { type xclip >/dev/null 2>/dev/null && echo -n $clip | xclip -sel "clip"; } \
+			|| echo "Haven't copied to the clipboard:  no xsel or xclip" >&2
+	else
+		echo "Haven't copied to the clipboard:  no \$DISPLAY" >&2
+	fi
+}
+
+
+
+#
+# Deletes the images corresponding to the supplied deletehashes.
+#
+function delete_images() {
+	# ignore the '-d' argument
+	shift
+	
+	for deletehash do
+		# try to delete the image
+		response=$(curl -sH "Authorization: Client-ID $clientid" -X DELETE "https://api.imgur.com/3/image/""$deletehash")
+		
+		# was the operation successful?
+		if [ -z $(grep -o '"status":200' <<< "$response") ]; then
+			echo "Deletion failed for $deletehash:  "$(get_value_from_response "$response" "error") >&2
+			errors=true
+		else
+			echo "Deletion OK:  $deletehash" >&2
+		fi
+	done
+}
+
+
+
+# check curl is available
+type curl >/dev/null 2>/dev/null || {
+	echo "Couln't find curl, which is required." >&2
+	exit 17
+}
 
 # check arguments
 if [ "$1" = "-h" -o "$1" = "--help" ]; then
@@ -112,48 +188,12 @@ elif [ $# == 0 ]; then
 	exit 16
 fi
 
-# check curl is available
-type curl >/dev/null 2>/dev/null || {
-	echo "Couln't find curl, which is required." >&2
-	exit 17
-}
 
-clip=""
 errors=false
-
-# loop through arguments
-while [ $# -gt 0 ]; do
-	file="$1"
-	shift
-
-	# upload the image
-	response=$(upload_image "$file")
-	
-	# get image url link
-	echo $response | grep -qo '"status":200' && url=$(get_value_from_response "$response" "link" | sed -e 's/\\//g')
-	
-	if [ -z "$url" ]; then
-		errormsg=$(get_value_from_response "$response" "error")
-		echo "Upload failed for $file:  $errormsg" >&2
-		errors=true
-		continue
-	fi
-
-	# output the URL
-	printf '%s    (Delete Hash = %s)\n' "$url" $(get_value_from_response "$response" "deletehash")
-
-	# append the URL to a string so we can put them all on the clipboard later
-	clip="$clip$url
-"
-done
-
-# put the URLs on the clipboard if we have xsel or xclip
-if [ $DISPLAY ]; then
-	{ type xsel >/dev/null 2>/dev/null && echo -n $clip | xsel --clipboard; } \
-		|| { type xclip >/dev/null 2>/dev/null && echo -n $clip | xclip -sel "clip"; } \
-		|| echo "Haven't copied to the clipboard: no xsel or xclip" >&2
+if [ "$1" = "-d" -o "$1" = "--delete" ]; then
+	delete_images "$@"
 else
-	echo "Haven't copied to the clipboard: no \$DISPLAY" >&2
+	upload_images "$@"
 fi
 
 if $errors; then
