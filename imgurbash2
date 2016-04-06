@@ -39,8 +39,9 @@ clientid='1923eac1555838e'
 # Parameters:  None
 #
 function usage {
-	echo "Uploads images to imgur and output their imgurl URL link.  If xsel or xclip is" >&2
-	echo "available, the links are copied to your clipboard." >&2
+	echo "Uploads images to imgur and output their imgurl URL link.  It can also delete" >&2
+	echo "previously uploaded images.  If xsel or xclip is available, the links are copied" >&2
+	echo "to your clipboard." >&2
 	echo "" >&2
 	echo "Usage:" >&2
 	echo "    $(basename $0) [option] <image_1> [<image_2>...]" >&2
