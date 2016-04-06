@@ -31,7 +31,11 @@
 # URLs will also be put on the X selection, which you can usually paste with a CTRL-V.
 
 
-# function to output usage instructions
+#
+# Function to output usage instructions
+#
+# Parameters:  None
+#
 function usage {
 	echo "Uploads images to imgur and output their imgurl URL link.  If xsel or xclip is" >&2
 	echo "available, the links are copied to your clipboard." >&2
@@ -44,10 +48,14 @@ function usage {
 }
 
 
-# Returns true if the image is stored on a remote machine (i.e. http or https
-# or ftp);  false otherwise.
+#
+# Returns true if the image is stored on a remote machine (i.e. http or https);
+# false otherwise.
+#
+# Parameter:  URL to parse
+#
 function is_remote_image() {	
-	if [ $(grep -i -E "^(http[s]?|ftp)://.+" <<< "$1")  ]; then
+	if [ $(grep -i -E "^(http[s]?)://.+" <<< "$1")  ]; then
 		return $(true)
 	else
 		return $(false)
@@ -55,7 +63,11 @@ function is_remote_image() {
 }
 
 
+#
 # Uploads image to imgur
+#
+# Parameter:  Image file path or image URL
+#
 function upload_image() {
 	clientid='1923eac1555838e'
 	file="$1"
@@ -72,6 +84,19 @@ function upload_image() {
 	else
 		echo '"error":"File does not exist, skipping"'
 	fi
+}
+
+
+#
+# Given a string it will try to extract its values (from the given JSON response).
+# E.g.  '"error":"Invalid client_id"' ==> string = "error", value = "Invalid client_id"
+#
+# Paramateres:
+#   $1 - Response JSON.
+#   $2 - 'String' (not datatype) which will be used to get the value from.
+#
+function get_value_from_response() {
+	sed -e 's/.*\"'$2'\":"\([^"]*\).*/\1/' <<< "$1"
 }
 
 
@@ -105,17 +130,17 @@ while [ $# -gt 0 ]; do
 	response=$(upload_image "$file")
 	
 	# get image url link
-	echo $response | grep -qo '"status":200' && url=$(echo $response | sed -e 's/.*"link":"\([^"]*\).*/\1/' -e 's/\\//g')
+	echo $response | grep -qo '"status":200' && url=$(get_value_from_response "$response" "link" | sed -e 's/\\//g')
 	
 	if [ -z "$url" ]; then
-		errormsg=$(echo $response | sed -e 's/.*"error":"\([^"]*\).*/\1/')
+		errormsg=$(get_value_from_response "$response" "error")
 		echo "Upload failed for $file:  $errormsg" >&2
 		errors=true
 		continue
 	fi
 
 	# output the URL
-	echo $url
+	printf '%s    (Delete Hash = %s)\n' "$url" $(get_value_from_response "$response" "deletehash")
 
 	# append the URL to a string so we can put them all on the clipboard later
 	clip="$clip$url
