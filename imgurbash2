@@ -31,14 +31,12 @@
 # URLs will also be put on the X selection, which you can usually paste with a CTRL-V.
 
 
-clientid='1923eac1555838e'
-
 #
 # Function to output usage instructions
 #
 # Parameters:  None
 #
-function usage {
+function usage() {
 	echo "Uploads images to imgur and output their imgurl URL link.  It can also delete" >&2
 	echo "previously uploaded images.  If xsel or xclip is available, the links are copied" >&2
 	echo "to your clipboard." >&2
@@ -74,6 +72,14 @@ function is_remote_image() {
 
 
 #
+# curl function that will send requests to the imgur server(s).
+#
+function curl_imgur() {
+	curl -sH "Authorization: Client-ID 1923eac1555838e" "$@"
+}
+
+
+#
 # Uploads image to imgur
 #
 # Parameter:  Image file path or image URL
@@ -83,11 +89,11 @@ function upload_image() {
 
 	# if the image is stored remotely...
 	if is_remote_image "$file"; then
-		curl -sH "Authorization: Client-ID $clientid" --data-urlencode "image=$file" "https://api.imgur.com/3/upload"
+		curl_imgur --data-urlencode "image=$file" "https://api.imgur.com/3/upload"
 		
 	# else if the local image file exists on disk...
 	elif [ -f "$file" ]; then
-		curl -sH "Authorization: Client-ID $clientid" -F "image=@$file" "https://api.imgur.com/3/upload"
+		curl_imgur -F "image=@$file" "https://api.imgur.com/3/upload"
 	
 	# else the file does not exist
 	else
@@ -158,7 +164,7 @@ function delete_images() {
 	
 	for deletehash do
 		# try to delete the image
-		response=$(curl -sH "Authorization: Client-ID $clientid" -X DELETE "https://api.imgur.com/3/image/""$deletehash")
+		response=$(curl_imgur -X DELETE "https://api.imgur.com/3/image/""$deletehash")
 		
 		# was the operation successful?
 		if [ -z $(grep -o '"status":200' <<< "$response") ]; then
