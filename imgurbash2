@@ -57,6 +57,9 @@ function usage() {
 	echo "        Displays this help and exit." >&2
 	echo "    -v, --version" >&2
 	echo "        Print program version and exit." >&2
+	echo "" >&2
+	echo "Examples:" >&2
+	echo "    Refer to https://github.com/ram-on/imgurbash2" >&2
 }
 
 
