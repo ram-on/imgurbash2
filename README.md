@@ -30,7 +30,7 @@ http://i.imgur.com/HDVhl23.png    (Delete Hash = vgdTM62vQ08xaxa)
 
 To delete the above uploaded image:
 ```bash
-imgurbash2 -d vgdTM62vQ08akaQ
+imgurbash2 -d vgdTM62vQ08xaxa
 ```
 
 ## Installation
