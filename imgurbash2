@@ -152,7 +152,7 @@ function upload_images() {
 
 	# copy the URLs to the clipboard (if the user has xsel or xclip installed)
 	if [ $DISPLAY ]; then
-		{ type xsel >/dev/null 2>/dev/null && echo -n $clip | xsel --clipboard; } \
+		{ type xsel >/dev/null 2>/dev/null && echo -n $clip | xsel --input --clipboard; } \
 			|| { type xclip >/dev/null 2>/dev/null && echo -n $clip | xclip -sel "clip"; } \
 			|| echo "Haven't copied to the clipboard:  no xsel or xclip" >&2
 	else
