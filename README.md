@@ -4,7 +4,7 @@ imgurbash2 is a simple bash script that allows you to upload images to [imgur](h
 This script can delete previously uploaded images.
 
 ## Usage
-### Upload images
+### Upload Local Images
 
 To upload the image named cow.png to imgur:
 ```bash
@@ -16,9 +16,11 @@ http://i.imgur.com/HDVh123.png    (Delete Hash = vgdTM62vQ08xaxa)
 ```
 The first link is the URL of the uploaded image.  This URL is copied to you clipboard and hence you can use <kbd>CTRL</kbd>+<kbd>V</kbd> to paste it (provided that `xsel` or `xclip` is installed).
 
+### Upload Remote Images
+
 It is also possible to upload remote images (HTTP/HTTPS) to imgur:
 ```bash
-# Upload the remote image fish.png and lion.png
+# Upload the remote image fish.png and (local image) lion.png
 imgurbash2  https://myserver.org/fish.png  ~/lion.png
 ```
 
