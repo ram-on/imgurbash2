@@ -1,9 +1,13 @@
 # imgurbash2
 imgurbash2 is a simple bash script that allows you to upload images to [imgur](https://imgur.com/).  Once an image is uploaded, the link is displayed on the terminal and copied to your clipboard (see below).
 
-This script can delete previously uploaded images.
-
 Tested on Linux and macOS.
+
+## Features
+* Upload remote HTTP/HTTPS images to imgur;
+* Uploads multiple images at one go;
+* Delete previously uploaded images.
+* Copies uploaded images' URLs to your clipboard.
 
 ## Usage
 ### Upload Local Images
