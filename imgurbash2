@@ -1,16 +1,16 @@
 #!/bin/bash
-# Copyright (c) 2016 Ramon <https://github.com/ram-on/imgurbash2>
-# 
+# Copyright (c) 2016-2017 Ramon <https://github.com/ram-on/imgurbash2>
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -30,7 +30,7 @@
 # URLs will also be put on the X selection, which you can usually paste with a CTRL-V.
 
 # Software version
-version="2.1"
+version="2.2"
 
 
 #
@@ -40,9 +40,13 @@ version="2.1"
 #
 function usage() {
 	echo "Uploads images to imgur and output their imgurl URL link.  It can also delete" >&2
-	echo "previously uploaded images.  If xsel or xclip is available, the links are copied" >&2
-	echo "to your clipboard." >&2
+	echo "previously uploaded images." >&2
 	echo "" >&2
+	if [[ $(uname) == "Darwin" ]]; then
+		echo -e "The URL links are then copied to your clipboard.\n"
+	else
+		echo -e "If xsel or xclip is available, the URL links are copied to your clipboard.\n" >&2
+	fi
 	echo "Usage:" >&2
 	echo "    $(basename $0) [option] <image_1> [<image_2>...]" >&2
 	echo "" >&2
@@ -69,7 +73,7 @@ function usage() {
 #
 # Parameter:  URL to parse
 #
-function is_remote_image() {	
+function is_remote_image() {
 	if [ $(grep -i -E "^(http[s]?)://.+" <<< "$1")  ]; then
 		return $(true)
 	else
@@ -97,11 +101,11 @@ function upload_image() {
 	# if the image is stored remotely...
 	if is_remote_image "$file"; then
 		curl_imgur --data-urlencode "image=$file" "https://api.imgur.com/3/upload"
-		
+
 	# else if the local image file exists on disk...
 	elif [ -f "$file" ]; then
 		curl_imgur -F "image=@$file" "https://api.imgur.com/3/upload"
-	
+
 	# else the file does not exist
 	else
 		echo '"error":"File does not exist, skipping"'
@@ -123,11 +127,32 @@ function get_value_from_response() {
 
 
 #
+# Copy the URLs to the clipboard.
+#
+function copy_urls_to_clipboard {
+	clip="$1"
+
+	# if we are running on macOS
+	if [ $(uname) == "Darwin" ]; then
+		pbcopy <<< "$clip"
+	# else is we are running on Linux and other unices then copy the URLS if the
+	# user has xsel or xclip nstalled...
+	elif [ $DISPLAY ]; then
+		{ type xsel >/dev/null 2>/dev/null && echo -n $clip | xsel --input --clipboard; } \
+			|| { type xclip >/dev/null 2>/dev/null && echo -n $clip | xclip -sel "clip"; } \
+			|| echo "Haven't copied to the clipboard:  no xsel or xclip" >&2
+	else
+		echo "Haven't copied to the clipboard:  no \$DISPLAY" >&2
+	fi
+}
+
+
+#
 # Uploads image(s) to imgur.
 #
 function upload_images() {
 	clip=""
-	
+
 	# loop through arguments
 	for file do
 		# upload the image
@@ -140,7 +165,7 @@ function upload_images() {
 		if [ -z "$url" ]; then
 			echo "Upload failed for $file:  "$(get_value_from_response "$response" "error") >&2
 			errors=true
-		else 
+		else
 			# output the imgur URL
 			printf '%s    (Delete Hash = %s)\n' "$url" $(get_value_from_response "$response" "deletehash")
 
@@ -150,14 +175,8 @@ function upload_images() {
 		fi
 	done
 
-	# copy the URLs to the clipboard (if the user has xsel or xclip installed)
-	if [ $DISPLAY ]; then
-		{ type xsel >/dev/null 2>/dev/null && echo -n $clip | xsel --input --clipboard; } \
-			|| { type xclip >/dev/null 2>/dev/null && echo -n $clip | xclip -sel "clip"; } \
-			|| echo "Haven't copied to the clipboard:  no xsel or xclip" >&2
-	else
-		echo "Haven't copied to the clipboard:  no \$DISPLAY" >&2
-	fi
+	# copy the URLs to the clipboard
+	copy_urls_to_clipboard "$clip"
 }
 
 
@@ -168,11 +187,11 @@ function upload_images() {
 function delete_images() {
 	# ignore the '-d' argument
 	shift
-	
+
 	for deletehash do
 		# try to delete the image
 		response=$(curl_imgur -X DELETE "https://api.imgur.com/3/image/""$deletehash")
-		
+
 		# was the operation successful?
 		if [ -z $(grep -o '"status":200' <<< "$response") ]; then
 			echo "Deletion failed for $deletehash:  "$(get_value_from_response "$response" "error") >&2

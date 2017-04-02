@@ -3,6 +3,8 @@ imgurbash2 is a simple bash script that allows you to upload images to [imgur](h
 
 This script can delete previously uploaded images.
 
+Tested on Linux and macOS.
+
 ## Usage
 ### Upload Local Images
 
@@ -14,7 +16,7 @@ The above command will output something like this:
 ```bash
 http://i.imgur.com/HDVh123.png    (Delete Hash = vgdTM62vQ08xaxa)
 ```
-The first link is the URL of the uploaded image.  This URL is copied to you clipboard and hence you can use <kbd>CTRL</kbd>+<kbd>V</kbd> to paste it (provided that `xsel` or `xclip` is installed).
+The first link is the URL of the uploaded image.  This URL is copied to you clipboard and hence you can use <kbd>CTRL</kbd>+<kbd>V</kbd> to paste it (provided that `xsel` or `xclip` is installed on Linux - no separate program is required for macOS).
 
 ### Upload Remote Images
 
@@ -36,7 +38,7 @@ imgurbash2 -d vgdTM62vQ08xaxa
 ```
 
 ## Installation
-### Linux / UN*X
+### Linux / macOS / UN*X
 ```bash
 curl -O https://raw.githubusercontent.com/ram-on/imgurbash2/master/imgurbash2
 chmod u+x imgurbash2
@@ -51,7 +53,7 @@ yaourt -S imgurbash2
 | Program            | Optional | Reason |
 | ------------------ | -------- | ------------- |
 | `curl`             | No       | Uploads images  |
-| `xsel` or `xclip`  | Yes      | Copies URL (image) link to clipboard |
+| `xsel` or `xclip`  | Yes      | Copies URL (image) link to clipboard if using Linux - no separate program is required for macOS |
 
 ## License
 [MIT License](https://raw.githubusercontent.com/ram-on/imgurbash2/master/LICENSE)
