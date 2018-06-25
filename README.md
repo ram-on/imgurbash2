@@ -23,7 +23,7 @@ imgurbash2 cow.png
 ```
 The above command will output something like this:
 ```bash
-[cow.png] uploaded: http://i.imgur.com/HDVh123.png deletehash=[wef2q3r] (https://imgur.com/delete/wef2q3r)
+http://i.imgur.com/HDVh123.png (Delete Hash = wef2q3r)
 
 ```
 The first link is the URL of the uploaded image. This URL is copied to you clipboard
@@ -50,7 +50,7 @@ imgurbash2  https://myserver.org/fish.png  ~/lion.png
 ### Delete images
 ```bash
 imgurbash2 ~/tmp/test.png
-[~/tmp/test.png] uploaded: http://i.imgur.com/HDVh123.png deletehash=[vgdTM62vQ08xaxa] (https://imgur.com/delete/vgdTM62vQ08xaxa)
+http://i.imgur.com/HDVh123.png (Delete Hash = vgdTM62vQ08xaxa)
 ```
 
 To delete the above uploaded image:
@@ -64,6 +64,11 @@ imgurbash2 -D 5m ~/tmp/test.png
 ```
 
 Uploaded image will automatically be deleted after 5 minutes.
+
+Note the deletion will be executed by backgrounded shell process,
+which means it assumes your computer won't be halted/suspended
+before the time has passed, and you still have external connection
+in order to call imgur api.
 
 ## Installation
 ### Linux / macOS / UN*X
@@ -81,9 +86,9 @@ yaourt -S imgurbash2
 | Program            | Optional | Reason |
 | ------------------ | -------- | ------------- |
 | `curl`             | No       | Uploads images  |
-| `jq`               | No       | Parses api json response  |
-| `xsel` or `xclip`  | Yes      | Copies URL (image) link to clipboard if using
-Linux - no separate program is required for macOS |
+| `xsel` or `xclip`  | Yes      | Copies URL (image) link to clipboard if using Linux - no separate program is required for macOS |
+| `notify-send`      | Yes      | Provides notification messages; Linux  |
+| `growlnotify` or `terminal-notifier`      | Yes      | Provides notification messages; macOS  |
 
 ## License
 [MIT License](https://raw.githubusercontent.com/ram-on/imgurbash2/master/LICENSE)
