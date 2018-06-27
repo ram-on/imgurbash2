@@ -263,15 +263,16 @@ parse_nonstr_field() {
 }
 
 
-# Copies given string to clipboard.
+# Converts given space-separated string to newline-separated string,
+# and copies to our clipboard.
 #
-# @param {string}  input   string to copy onto clipboard.
+# @param {string}  input   space-separated strings to copy to clipboard.
 #
 # @returns {void}
 copy_to_clipboard() {
 	local input
 
-	input="$1"
+	input="$(printf "${1// /\\n}")"
 
 	if [[ "$IS_MAC" -eq 1 ]]; then
 		pbcopy <<< "$input"
@@ -291,7 +292,7 @@ copy_to_clipboard() {
 #
 # @returns {void}
 upload_images() {
-	local files file response url dhash
+	local files file response url urls dhash
 
 	declare -a files=("$@")
 
@@ -305,7 +306,8 @@ upload_images() {
 		dhash="$(parse_str_field "$response" deletehash)"
 		[[ -z "$dhash" ]] && err "no deletehash found in image [$file] upload response [$response]"
 
-		info -S "[$file] uploaded: $url deletehash=[$dhash] (https://imgur.com/delete/${dhash})"
+		info -NS "[$file] uploaded: $url deletehash=[$dhash] (https://imgur.com/delete/${dhash})"
+		info -LS "[$file] uploaded"
 		echo -e "$url (Delete Hash = $dhash)"  # keep old stdout message for backwards compatibility
 
 		if [[ -n "$AUTO_DELETE_DELAY" ]]; then
@@ -313,9 +315,10 @@ upload_images() {
 			nohup /bin/bash -c "sleep $AUTO_DELETE_DELAY_SEC && delete_image_auto '$dhash' '$url'" &>/dev/null &
 		fi
 
-		[[ "$COPY_URL_TO_CLIP" == true ]] && copy_to_clipboard "$url"
+		urls+=("$url")
 	done
 
+	[[ -n "${urls[*]}" && "$COPY_URL_TO_CLIP" == true ]] && copy_to_clipboard "${urls[*]}"
 }
 
 
