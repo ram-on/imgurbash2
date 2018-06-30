@@ -42,7 +42,8 @@ readonly CONF_FILE="$CONF_ROOT/config"
 readonly VERSION=3
 readonly TOKEN_URL="https://api.imgur.com/oauth2/token"
 readonly JOB_ID="$$"
-uname | grep -q "Darwin" && IS_MAC=1 || IS_MAC=0
+uname | grep -q Darwin && IS_MAC=1 || IS_MAC=0
+uname | grep -q Linux && IS_LINUX=1 || IS_LINUX=0
 
 HAS_ERRORS=0  # flag indicating if any errors were encountered
 
@@ -554,7 +555,7 @@ init_auth() {
 		info -NL "and copy the resulting redirect url in here"
 
 		read -r -p 'redirect url: ' url
-		[[ -z "$url" ]] && fail -NL "given redirect url [$url] doesn't look right"
+		[[ "$url" == *access_token* && "$url" == *refresh_token* ]] || fail -NL "given redirect url [$url] doesn't look right"
 
 		ACCESS_TOKEN="$(_parse access_token)"
 		REFRESH_TOKEN="$(_parse refresh_token)"
@@ -603,12 +604,12 @@ persist_tokens() {
 
 	tmp="/tmp/.${SELF}-$RANDOM"
 
-	if [[ -z "$ACCESS_TOKEN" ]]; then
-		fail "[\$access_token] is missing"
-	elif [[ -z "$REFRESH_TOKEN" ]]; then
-		fail "[\$refresh_token] is missing"
-	elif [[ -z "$expires_in" ]]; then
-		fail "[\$expires_in] is missing"
+	if ! [[ "$ACCESS_TOKEN" =~ ^[0-9a-z]+$ ]]; then
+		fail "[access_token] is not in valid format: [$ACCESS_TOKEN]"
+	elif ! [[ "$REFRESH_TOKEN" =~ ^[0-9a-z]+$ ]]; then
+		fail "[refresh_token] is not in valid format: [$REFRESH_TOKEN]"
+	elif ! [[ "$expires_in" =~ ^[0-9]+$ ]]; then
+		fail "[expires_in] is not a valid digit: [$expires_in]"
 	fi
 
 	TOKEN_EXPIRE_TIME="$(( $(date +%s) + expires_in ))"
@@ -616,11 +617,11 @@ persist_tokens() {
 	# replace values in $CREDENTIALS_FILE with newly fetched ones:
 	for key in ACCESS_TOKEN REFRESH_TOKEN TOKEN_EXPIRE_TIME; do
 		# first remove existing value:
-		if [[ "$IS_MAC" -eq 1 ]]; then
+		if [[ "$IS_LINUX" -eq 1 ]]; then
+			sed --follow-symlinks -i "/$key/d" "$CREDENTIALS_FILE"
+		else
 			cp -- "$CREDENTIALS_FILE" "$tmp"
 			sed "/$key/d" < "$tmp" > "$CREDENTIALS_FILE"
-		else
-			sed --follow-symlinks -i "/$key/d" "$CREDENTIALS_FILE"
 		fi
 
 		val="$(eval echo "\$$key")"
