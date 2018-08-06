@@ -534,7 +534,7 @@ init_auth() {
 	local url expires_in
 
 	_parse() {
-		sed -e 's/.*'"$1"'=\(\w\+\).*/\1/' <<< "$url"
+		sed -e 's#.*'$1'=\([^&]*\).*#\1#' <<< "$url"
 	}
 
 	if [[ -z "$CLIENT_ID" ]]; then
@@ -614,7 +614,7 @@ persist_tokens() {
 
 	TOKEN_EXPIRE_TIME="$(( $(date +%s) + expires_in ))"
 
-	# replace values in $CREDENTIALS_FILE with newly fetched ones:
+	# replace values in $CREDENTIALS_FILE with new ones:
 	for key in ACCESS_TOKEN REFRESH_TOKEN TOKEN_EXPIRE_TIME; do
 		# first remove existing value:
 		if [[ "$IS_LINUX" -eq 1 ]]; then
