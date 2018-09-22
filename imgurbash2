@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright (c) 2016-2017 Ramon <https://github.com/ram-on/imgurbash2>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,216 +22,704 @@
 #--------------------------------------------------------------------
 # AUTHORS:  Ramon <https://github.com/ram-on/imgurbash2>
 #           Originally written by Bart Nagel <bart@tremby.net>
+#           Config & auth logic inspired by https://github.com/jomo/imgur-screenshot/
 # REQUIRED: curl
-# OPTIONAL: xsel or xclip for copying URLs to your clipboard.
+# OPTIONAL:
+#    * xsel or xclip for copying URLs to your clipboard (Linux)
+#    * notify-send for notifications (Linux)
+#    * growlnotify or terminal-notifier for notifications (macOS)
 #--------------------------------------------------------------------
 #
-# The URLs will be outputted on your terminal. If you have xsel or xclip the
-# URLs will also be put on the X selection, which you can usually paste with a CTRL-V.
+# The URLs will be output on your terminal. If you have xsel or xclip they
+# will also be copied on clipboard, which you can usually paste with a CTRL-V.
 
-# Software version
-version="2.2"
+set -a
+
+readonly SELF=${0##*/}
+readonly CONF_ROOT="$HOME/.config/imgurbash2"
+
+readonly CONF_FILE="$CONF_ROOT/config"
+readonly VERSION=3
+readonly TOKEN_URL="https://api.imgur.com/oauth2/token"
+readonly JOB_ID="$$"
+uname | grep -q Darwin && IS_MAC=1 || IS_MAC=0
+uname | grep -q Linux && IS_LINUX=1 || IS_LINUX=0
+
+HAS_ERRORS=0  # flag indicating if any errors were encountered
+
+declare -A COLORS=(
+	[RED]=$'\033[0;31m'
+	[GREEN]=$'\033[0;32m'
+	[BLUE]=$'\033[0;34m'
+	[PURPLE]=$'\033[0;35m'
+	[CYAN]=$'\033[0;36m'
+	[WHITE]=$'\033[0;37m'
+	[YELLOW]=$'\033[0;33m'
+	[BOLD]=$'\033[1m'
+	[OFF]=$'\033[0m'
+)
 
 
+# Print usage info.
 #
-# Function to output usage instructions
+# @returns {void}
+usage() {
+	echo "
+    Uploads images to imgur and output their imgurl URL link. It can also delete
+    previously uploaded images.
+
+    The URL links are then copied to your clipboard, given required dependencies are found.
+
+    ${COLORS[GREEN]}Usage:${COLORS[OFF]}
+        ${COLORS[CYAN]}${SELF}${COLORS[OFF]} [option] <image1> [image2...]
+
+    Where
+        image* is a local file or a remote image (eg http://domain/myimage.png)
+
+    ${COLORS[GREEN]}Options:${COLORS[OFF]}
+        ${COLORS[GREEN]}-d, --delete${COLORS[OFF]} <delete_hash1> [delete_hash2...]
+            Deletes image(s) based on supplied delete hash.
+        ${COLORS[GREEN]}-D, --auto-delete${COLORS[OFF]} <delay>
+            Where <delay> is how long we should wait before deletion; seconds
+            by default, but accepts [smhdwM] suffix; eg 20, 15m, 1h.
+            s - sec, m - min, h - hour, d - day, w - week, M - month (30d).
+            If provided, uploaded image(s) will be automatically deleted
+            after given time has elapsed; note this assumes your computer
+            won't be halted/suspended before the time has passed.
+        ${COLORS[GREEN]}-l, --login${COLORS[OFF]} <true|false>
+            state whether authenticated operation is required.
+            if 'true', then credentials need to be set up in
+            [$CREDENTIALS_FILE] beforehand.
+        ${COLORS[GREEN]}-a, --album-id${COLORS[OFF]} <id>
+            Id of an album if image to upload should belong in an album.
+        ${COLORS[GREEN]}-t, --title${COLORS[OFF]} <title>
+            Title for the image(s) to be uploaded
+        ${COLORS[GREEN]}-h, --help${COLORS[OFF]}
+            Displays this help.
+        ${COLORS[GREEN]}-v, --version${COLORS[OFF]}
+            Prints script version.
+    ${COLORS[GREEN]}Examples:${COLORS[OFF]}
+        Refer to https://github.com/ram-on/imgurbash2
+"
+}
+
+
+# Checks whether given url is a valid one.
+# Note we only check for https? protocol.
 #
-# Parameters:  None
+# @param {string}  url   url which validity to test.
 #
-function usage() {
-	echo "Uploads images to imgur and output their imgurl URL link.  It can also delete" >&2
-	echo "previously uploaded images." >&2
-	echo "" >&2
-	if [[ $(uname) == "Darwin" ]]; then
-		echo -e "The URL links are then copied to your clipboard.\n"
+# @returns {bool}  true, if provided url was a valid url.
+is_valid_url() {
+	local url regex
+
+	url="$1"
+
+	regex='https?://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+
+	[[ "$url" =~ $regex ]]
+}
+
+
+# Performs call to imgur api.
+# Injects appropriate curl headers, depending on whether authorized
+# or anon request is being made.
+#
+# @param {string}     -r resource   api resource to hit.
+# @param {string...}  hdrs          additional curl options.
+#
+# @returns {string}  response body, as returned by curl.
+api_call() {
+	local hdrs resource
+
+	if [[ "$1" == '-r' || "$1" == '--resource' ]] && [[ -n "$2" ]]; then
+		resource="$2"
+		shift 2
 	else
-		echo -e "If xsel or xclip is available, the URL links are copied to your clipboard.\n" >&2
+		fail "no resource given when calling ${FUNCNAME}()"
 	fi
-	echo "Usage:" >&2
-	echo "    $(basename $0) [option] <image_1> [<image_2>...]" >&2
-	echo "" >&2
-	echo "Where:" >&2
-	echo "    image_num is a local image file or a remote image (i.e. http/https)." >&2
-	echo "" >&2
-	echo "Options:" >&2
-	echo "    -d, --delete <delete_hash_1> [<delete_hash2>...]" >&2
-	echo "        Deletes image(s) based on the the supplied delete hash.  The delete hash" >&2
-	echo "        is outputted when the user uploads an image." >&2
-	echo "    -h, --help" >&2
-	echo "        Displays this help and exit." >&2
-	echo "    -v, --version" >&2
-	echo "        Print program version and exit." >&2
-	echo "" >&2
-	echo "Examples:" >&2
-	echo "    Refer to https://github.com/ram-on/imgurbash2" >&2
+
+	declare -a hdrs=("$@")
+	[[ "$LOGIN" == true ]] && hdrs+=('-H' "Authorization: Bearer ${ACCESS_TOKEN}") \
+			|| hdrs+=('-H' "Authorization: Client-ID $ANON_CLIENT_ID")
+
+	curl --compressed \
+			--connect-timeout "$API_CALL_CONNECT_TIMEOUT_SEC" \
+			-m "$API_CALL_TIMEOUT_SEC" \
+			--retry "$API_CALL_RETRIES" \
+			--stderr - \
+			-sSL \
+			"${hdrs[@]}" \
+			"https://api.imgur.com/3/${resource}"
 }
 
 
+# Uploads given image to imgur.
 #
-# Returns true if the image is stored on a remote machine (i.e. http or https);
-# false otherwise.
+# @param {string}  file   path to local image file, or external URL.
 #
-# Parameter:  URL to parse
-#
-function is_remote_image() {
-	if [ $(grep -i -E "^(http[s]?)://.+" <<< "$1")  ]; then
-		return $(true)
-	else
-		return $(false)
-	fi
-}
+# @returns {string}  response body, as returned by curl.
+upload_image() {
+	local file hdrs
 
-
-#
-# curl function that will send requests to the imgur server(s).
-#
-function curl_imgur() {
-	curl -sH "Authorization: Client-ID 1923eac1555838e" "$@"
-}
-
-
-#
-# Uploads image to imgur
-#
-# Parameter:  Image file path or image URL
-#
-function upload_image() {
 	file="$1"
+	declare -a hdrs=('-X' POST)
 
-	# if the image is stored remotely...
-	if is_remote_image "$file"; then
-		curl_imgur --data-urlencode "image=$file" "https://api.imgur.com/3/upload"
+	[[ -n "$TITLE" ]] && hdrs+=('-F' "title=$TITLE")
+	[[ -n "$ALBUM_ID" ]] && hdrs+=('-F' "album=$ALBUM_ID")
 
-	# else if the local image file exists on disk...
-	elif [ -f "$file" ]; then
-		curl_imgur -F "image=@$file" "https://api.imgur.com/3/upload"
-
-	# else the file does not exist
+	if [[ -f "$file" ]]; then
+		hdrs+=('-F' "image=@$file")
+	elif is_valid_url "$file"; then
+		# TODO: only works when album_id not defined?
+		hdrs+=('--data-urlencode' "image=$file")
 	else
-		echo '"error":"File does not exist, skipping"'
+		err "File [$file] does not exist, skipping"
+		return 1
+	fi
+
+	api_call -r image "${hdrs[@]}"
+}
+
+
+# Pops a notification message
+#
+# @param {string}  -t ttl  OPTIONAL message ttl in millisec (linux only atm);
+#                          value of 0 means no ttl;
+# @param {string}  lvl     message level. ERROR | INFO
+# @param {string}  msg     message to print.
+#
+# @returns {void}
+notify() {
+	local opt ttl lvl msg default_ttl OPTIND
+
+	default_ttl=5000
+
+	while getopts "t:" opt; do
+		case "$opt" in
+			t) ttl="$OPTARG" ;;
+			*) usage; exit 1 ;;  # do not call fail() to avoid circular dep
+		esac
+	done
+	shift $((OPTIND-1))
+
+
+	lvl="$1"
+	msg="$2"
+
+	ttl="${ttl:-$default_ttl}"
+
+	[[ "$ENABLE_NOTIFICATIONS" != true ]] && return
+
+	if [[ "$IS_MAC" -eq 1 ]]; then
+		if which growlnotify &>/dev/null; then
+			growlnotify --title "$SELF" --message "$msg"
+		elif which terminal-notifier &>/dev/null; then
+			terminal-notifier -title "$SELF" -message "$msg"
+		fi
+	elif command -v notify-send &>/dev/null; then
+		if [[ "$lvl" == ERROR ]]; then
+			notify-send -u critical -c "im.error" -t "$ttl" "$SELF" "$msg"
+		elif [[ "$NOTIFY_LEVEL" != ERROR ]]; then
+			notify-send -u low -c "transfer.complete" -t "$ttl" "$SELF" "$msg"
+		fi
 	fi
 }
 
 
+# Parses string field value from given json input.
 #
-# Given a string it will try to extract its values (from the given JSON response).
 # E.g.  '"error":"Invalid client_id"' ==> string = "error", value = "Invalid client_id"
 #
-# Paramateres:
-#   $1 - Response JSON.
-#   $2 - 'String' (not datatype) which will be used to get the value from.
+# @param {string}  input  input JSON to parse value from.
+# @param {string}  field  non-nested (ie you can't do field.nestedfield) json
+#                         field whose value we're interested in.
 #
-function get_value_from_response() {
-	sed -e 's/.*\"'$2'\":"\([^"]*\).*/\1/' <<< "$1"
+# @returns {string}  value for given field, extracted from given input json.
+parse_str_field() {
+	local input field
+
+	input="$1"
+	field="$2"
+
+	sed -e 's/.*\"'"$field"'\":"\([^"]*\).*/\1/' <<< "$input"
 }
 
 
+# Parses non-string field value (number, bool) from given json input.
 #
-# Copy the URLs to the clipboard.
+# E.g.  '"status":200' ==> string = "status", value = "200"
 #
-function copy_urls_to_clipboard {
-	clip="$1"
+# @param {string}  input  input JSON to parse value from.
+# @param {string}  field  non-nested (ie you can't do field.nestedfield) json
+#                         field whose value we're interested in.
+#
+# @returns {string}  value for given field, extracted from given input json.
+parse_nonstr_field() {
+	local input field
 
-	# if we are running on macOS
-	if [ $(uname) == "Darwin" ]; then
-		pbcopy <<< "$clip"
-	# else is we are running on Linux and other unices then copy the URLS if the
-	# user has xsel or xclip nstalled...
-	elif [ $DISPLAY ]; then
-		{ type xsel >/dev/null 2>/dev/null && echo -n $clip | xsel --input --clipboard; } \
-			|| { type xclip >/dev/null 2>/dev/null && echo -n $clip | xclip -sel "clip"; } \
-			|| echo "Haven't copied to the clipboard:  no xsel or xclip" >&2
+	input="$1"
+	field="$2"
+	sed -e 's/.*\"'"$field"'\":\([^,}]*\).*/\1/' <<< "$input"
+}
+
+
+# Converts given space-separated string to newline-separated string,
+# and copies to our clipboard.
+#
+# @param {string}  input   space-separated strings to copy to clipboard.
+#
+# @returns {void}
+copy_to_clipboard() {
+	local input
+
+	input="$(printf "${1// /\\n}")"
+
+	if [[ "$IS_MAC" -eq 1 ]]; then
+		pbcopy <<< "$input"
+	elif [[ -n "$DISPLAY" ]]; then
+		{ command -v xsel &>/dev/null && echo -n "$input" | xsel --input --clipboard; } \
+			|| { command -v xclip &>/dev/null && echo -n "$input" | xclip -selection clipboard; } \
+			|| err -L "didn't copy to clipboard - xsel nor xclip are installed"
 	else
-		echo "Haven't copied to the clipboard:  no \$DISPLAY" >&2
+		err -L "Haven't copied to the clipboard:  no \$DISPLAY"
 	fi
 }
 
 
+# Uploads given image(s) to imgur
 #
-# Uploads image(s) to imgur.
+# @param {string...}  files  files to upload.
 #
-function upload_images() {
-	clip=""
+# @returns {void}
+upload_images() {
+	local files file response url urls dhash
 
-	# loop through arguments
-	for file do
-		# upload the image
-		response=$(upload_image "$file")
-		url=""
+	declare -a files=("$@")
+
+	for file in "${files[@]}"; do
+		response="$(upload_image "$file")"
+		is_request_success "$response" || { err "uploading [$file] failed"; HAS_ERRORS=1; continue; }
 
 		# get image url link
-		grep -qo '"status":200' <<< "$response"  &&  url=$(get_value_from_response "$response" "link" | sed -e 's/\\//g')
+		url="$(parse_str_field "$response" link | sed -e 's/\\//g')"
+		is_valid_url "$url" || err "uploaded image resulted in [$url] link"
+		dhash="$(parse_str_field "$response" deletehash)"
+		[[ -z "$dhash" ]] && err "no deletehash found in image [$file] upload response [$response]"
 
-		if [ -z "$url" ]; then
-			echo "Upload failed for $file:  "$(get_value_from_response "$response" "error") >&2
-			errors=true
-		else
-			# output the imgur URL
-			printf '%s    (Delete Hash = %s)\n' "$url" $(get_value_from_response "$response" "deletehash")
+		info -NS "[$file] uploaded: $url deletehash=[$dhash] (https://imgur.com/delete/${dhash})"
+		info -LS "[$file] uploaded"
+		echo -e "$url (Delete Hash = $dhash)"  # keep old stdout message for backwards compatibility
 
-			# append the URL to a string so we can put them all on the clipboard later
-			clip="$clip$url
-		"
+		if [[ -n "$AUTO_DELETE_DELAY" ]]; then
+			info "Deleting image [$url] in $AUTO_DELETE_DELAY"
+			nohup /bin/bash -c "sleep $AUTO_DELETE_DELAY_SEC && delete_image_auto '$dhash' '$url'" &>/dev/null &
 		fi
+
+		urls+=("$url")
 	done
 
-	# copy the URLs to the clipboard
-	copy_urls_to_clipboard "$clip"
+	[[ -n "${urls[*]}" && "$COPY_URL_TO_CLIP" == true ]] && copy_to_clipboard "${urls[*]}"
 }
 
 
-
+# Deletes uploaded images corresponding to supplied deletehashes.
 #
-# Deletes the images corresponding to the supplied deletehashes.
+# @param {string...}  hashes  imgur image deletion hashes.
 #
-function delete_images() {
-	# ignore the '-d' argument
-	shift
+# @returns {void}
+delete_images() {
+	local hash hashes
 
-	for deletehash do
-		# try to delete the image
-		response=$(curl_imgur -X DELETE "https://api.imgur.com/3/image/""$deletehash")
+	declare -a hashes=("$@")
 
-		# was the operation successful?
-		if [ -z $(grep -o '"status":200' <<< "$response") ]; then
-			echo "Deletion failed for $deletehash:  "$(get_value_from_response "$response" "error") >&2
-			errors=true
-		else
-			echo "Deletion OK:  $deletehash" >&2
-		fi
+	for hash in "${hashes[@]}"; do
+		response="$(api_call -r "image/${hash}" -X DELETE)"
+		is_request_success "$response" || { err "deleting hash [$hash] failed"; HAS_ERRORS=1; continue; }
+
+		info "Deletion OK:  $hash"
 	done
 }
 
 
+# Verifies whether call to imgur api was successful (implies basic response type).
+#
+# @param {string}  response   api response body.
+#
+# @returns {bool}  true, if request was successful.
+is_request_success() {
+	local response status success error
 
-# check curl is available
-type curl >/dev/null 2>/dev/null || {
-	echo "Couln't find curl, which is required." >&2
-	exit 17
+	response="$1"
+
+	success="$(parse_nonstr_field "$response" success)"
+
+	if [[ "$success" != true ]]; then
+		status="$(parse_nonstr_field "$response" status)"
+		error="$(parse_str_field "$response" error)"
+
+		err -N "request failed with status [$status]: $error"
+		return 1
+	fi
+
+	return 0
 }
 
-# check arguments
-if [ "$1" = "-h" -o "$1" = "--help" ]; then
-	usage
-	exit 0
-elif [ "$1" = "-v" -o "$1" = "--version" ]; then
-	echo "Version:  $version"
-	exit 0
-elif [ $# == 0 ]; then
-	echo "No file specified" >&2
-	echo "" >&2
-	usage
-	exit 16
+
+# Prints, notifies & logs given error message.
+#
+# @param {opt}      -N   OPTIONAL; don't open notification window.
+# @param {opt}      -L   OPTIONAL; don't log the message.
+# @param {string}   msg   error message.
+#
+# @returns {void}
+err() {
+	local opt no_notif no_log msg OPTIND
+
+	while getopts "NL" opt; do
+		case "$opt" in
+			N) no_notif=1 ;;
+			L) no_log=1 ;;
+			*) usage; exit 1 ;;  # do not call fail() to avoid circular dep
+		esac
+	done
+	shift $((OPTIND-1))
+
+	msg="$1"
+
+	>&2 echo -e "${COLORS[RED]}${SELF}:${COLORS[OFF]} ${msg:-"ERR"}" 1>&2
+
+	if [[ "$no_notif" -ne 1 ]]; then
+		notify -t 0 ERROR "$msg"
+	fi
+
+	if [[ "$no_log" -ne 1 ]]; then
+		echo "    ERR [$JOB_ID] $msg" >> "$LOG_FILE"
+	fi
+}
+
+
+# Convenience method for err()
+fail() {
+	err "$@"
+	exit 1
+}
+
+
+# Prints, notifies & logs given informational message.
+#
+# @param {opt}      -N   OPTIONAL; don't open notification window.
+# @param {opt}      -L   OPTIONAL; don't log the message.
+# @param {opt}      -S   OPTIONAL; don't print message to stderr.
+# @param {string}   msg   message.
+#
+# @returns {void}
+info() {
+	local opt no_notif no_log no_stdout msg OPTIND
+
+	while getopts "NLS" opt; do
+		case "$opt" in
+			N) no_notif=1 ;;
+			L) no_log=1 ;;
+			S) no_stdout=1 ;;
+			*) usage; fail ;;
+		esac
+	done
+	shift $((OPTIND-1))
+
+	msg="$1"
+
+	if [[ "$no_stdout" -ne 1 ]]; then
+		>&2 echo -e "${COLORS[YELLOW]}${SELF}:${COLORS[OFF]} ${msg:-"--info lvl message placeholder--"}"
+	fi
+
+	if [[ "$no_notif" -ne 1 ]]; then
+		notify INFO "$msg"
+	fi
+
+	if [[ "$no_log" -ne 1 ]]; then
+		echo "INFO [$JOB_ID] $msg" >> "$LOG_FILE"
+	fi
+}
+
+
+# Performs initialisation (eg checks)
+#
+# @returns {void}
+setup() {
+
+	[[ -d "$CONF_ROOT" ]] || mkdir -p -- "$CONF_ROOT"
+	[[ "${BASH_VERSINFO[0]}" -lt 4 ]] && fail "bash ver 4 or above required, you have [${BASH_VERSINFO[0]}]"
+	check_dependencies || fail -L "please install required dependencies"
+	[[ -n "$AUTO_DELETE_DELAY" ]] && sanitize_auto_delete_delay
+}
+
+
+# Sanitizes AUTO_DELETE_DELAY param and expands it into seconds-only global
+# variable AUTO_DELETE_DELAY_SEC
+#
+# @returns {void}
+sanitize_auto_delete_delay() {
+	local to_sec_conversions suffix
+
+	[[ "$AUTO_DELETE_DELAY" =~ ^[0-9]+[smhdwM]?$ ]] || fail "incorrect delay param provided: [$AUTO_DELETE_DELAY]"
+
+	declare -Ar to_sec_conversions=(
+		[s]=1
+		[m]=60
+		[h]=3600
+		[d]=86400
+		[w]=604800
+		[M]=2592000
+	)
+	suffix="${AUTO_DELETE_DELAY:$(( ${#AUTO_DELETE_DELAY} - 1)):1}"
+
+	if ! [[ "$suffix" =~ ^[0-9]+$ ]]; then
+		AUTO_DELETE_DELAY_SEC="${AUTO_DELETE_DELAY:0:$(( ${#AUTO_DELETE_DELAY} - 1))}"
+		AUTO_DELETE_DELAY_SEC="$(( AUTO_DELETE_DELAY_SEC * to_sec_conversions[$suffix] ))"
+	else
+		AUTO_DELETE_DELAY_SEC="$AUTO_DELETE_DELAY"
+	fi
+}
+
+
+# Checks if all required dependiencies are met.
+#
+# @returns {bool}  true, if all required dependencies are installed; false if
+#                  _any_ is missing.
+check_dependencies() {
+	local prog fail
+
+	fail=0
+	for prog in curl; do
+		command -v "$prog" &>/dev/null || { err -L "[$prog] not installed"; fail=1; }
+	done
+
+	return $fail
+}
+
+
+# Loads required authentication configuration required for authenticated api calls.
+#
+# @returns {void}
+load_access_token() {
+	local expired preemptive_refresh_time
+
+	TOKEN_EXPIRE_TIME=0  # set default, in case it can't be found in $CREDENTIALS_FILE yet
+
+	[[ -s "$CREDENTIALS_FILE" ]] && source "$CREDENTIALS_FILE"
+	[[ -z "$CLIENT_ID" || -z "$CLIENT_SECRET" || -z "$REFRESH_TOKEN" ]] && init_auth
+
+	preemptive_refresh_time="$((5 * 60))"
+	expired="$(($(date +%s) > (TOKEN_EXPIRE_TIME - preemptive_refresh_time)))"
+
+	if [[ "$expired" -eq 1 ]]; then
+		info -LN "access token expired, refreshing..."
+		refresh_access_token
+	fi
+
+	chmod 600 "$CREDENTIALS_FILE"
+}
+
+
+# Asks user for their client_id, client_secret, and resulting
+# callback url from the autorization call. This is intended to be ran
+# only during initial script setup.
+#
+# This function also defines ACCESS_TOKEN, REFRESH_TOKEN in
+# our global scope, and passes forward for validation & persisting.
+#
+# @returns {void}
+init_auth() {
+	local url expires_in
+
+	_parse() {
+		sed -e 's#.*'$1'=\([^&]*\).*#\1#' <<< "$url"
+	}
+
+	if [[ -z "$CLIENT_ID" ]]; then
+		read -r -p 'imgur client ID: ' CLIENT_ID
+		[[ -z "$CLIENT_ID" ]] && fail -NL "no clientId given, abort"
+		echo "CLIENT_ID='$CLIENT_ID'" >> "$CREDENTIALS_FILE"
+	fi
+
+	if [[ -z "$CLIENT_SECRET" ]]; then
+		read -r -p 'imgur client secret: ' CLIENT_SECRET
+		[[ -z "$CLIENT_SECRET" ]] && fail -NL "no client secret given, abort"
+		echo "CLIENT_SECRET='$CLIENT_SECRET'" >> "$CREDENTIALS_FILE"
+	fi
+
+	if [[ -z "$REFRESH_TOKEN" ]]; then
+		url="https://api.imgur.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=token"
+		info -NL "please open [${COLORS[CYAN]}${url}${COLORS[OFF]}] in browser"
+		info -NL "and copy the resulting redirect url in here"
+
+		read -r -p 'redirect url: ' url
+		[[ "$url" == *access_token* && "$url" == *refresh_token* ]] || fail -NL "given redirect url [$url] doesn't look right"
+
+		ACCESS_TOKEN="$(_parse access_token)"
+		REFRESH_TOKEN="$(_parse refresh_token)"
+		expires_in="$(_parse expires_in)"
+
+		persist_tokens "$expires_in"
+	fi
+}
+
+
+# Refreshes our access_token & refresh_token and defines them in our global scope.
+#
+# @returns {void}
+refresh_access_token() {
+	local response
+
+	# exchange the refresh token for access_token and refresh_token
+	response="$(curl --compressed -sSL \
+		--stderr - \
+		-F "client_id=${CLIENT_ID}" \
+		-F "client_secret=${CLIENT_SECRET}" \
+		-F "grant_type=refresh_token" \
+		-F "refresh_token=${REFRESH_TOKEN}" \
+		"$TOKEN_URL")"
+
+	[[ $? -ne 0 ]] && fail "refreshing access_token failed"
+	ACCESS_TOKEN="$(parse_str_field "$response" access_token)"
+	REFRESH_TOKEN="$(parse_str_field "$response" refresh_token)"
+	expires_in="$(parse_nonstr_field "$response" expires_in)"
+
+	persist_tokens "$expires_in"
+}
+
+
+# Persists api secret data into config file for future usage.
+# Note renewed access_token & refrsh_token are assumed to have
+# already been defined in global scope.
+#
+# @param {int}  expires_in    token expiration delta received from imgur.
+#
+# @returns {void}
+persist_tokens() {
+	local expires_in key val tmp
+
+	expires_in="$1"
+
+	tmp="/tmp/.${SELF}-$RANDOM"
+
+	if ! [[ "$ACCESS_TOKEN" =~ ^[0-9a-z]+$ ]]; then
+		fail "[access_token] is not in valid format: [$ACCESS_TOKEN]"
+	elif ! [[ "$REFRESH_TOKEN" =~ ^[0-9a-z]+$ ]]; then
+		fail "[refresh_token] is not in valid format: [$REFRESH_TOKEN]"
+	elif ! [[ "$expires_in" =~ ^[0-9]+$ ]]; then
+		fail "[expires_in] is not a valid digit: [$expires_in]"
+	fi
+
+	TOKEN_EXPIRE_TIME="$(( $(date +%s) + expires_in ))"
+
+	# replace values in $CREDENTIALS_FILE with new ones:
+	for key in ACCESS_TOKEN REFRESH_TOKEN TOKEN_EXPIRE_TIME; do
+		# first remove existing value:
+		if [[ "$IS_LINUX" -eq 1 ]]; then
+			sed --follow-symlinks -i "/$key/d" "$CREDENTIALS_FILE"
+		else
+			cp -- "$CREDENTIALS_FILE" "$tmp"
+			sed "/$key/d" < "$tmp" > "$CREDENTIALS_FILE"
+		fi
+
+		val="$(eval echo "\$$key")"
+		echo "${key}='$val'" >> "$CREDENTIALS_FILE"
+	done
+
+	[[ -f "$tmp" ]] && rm -f -- "$tmp"
+}
+
+
+# Function to be called from backgrounded process in order to
+# delete uploaded image.
+#
+# @param {string} dhash   image deletion hash.
+# @param {string} url     url to uploaded image to be deleted.
+#
+# @returns {void}
+delete_image_auto() {
+	local dhash url response
+
+	dhash="$1"
+	url="$2"
+
+	response="$(api_call -r "image/${dhash}" -X DELETE)"
+
+	if is_request_success "$response"; then
+		info -N "Image successfully deleted (delete hash: $dhash)."
+	else
+		err "image @ [$url] could not be deleted (delete hash $dhash): ${response}."
+	fi
+}
+
+
+#################
+###### Entry
+#################
+############# START CONFIG #############
+LOGIN=false  # true if we should authenticate with our own user.
+ALBUM_ID=""
+ANON_CLIENT_ID=f9012166f47bc38  # client_id to use for non-authenticated operations
+CREDENTIALS_FILE="$CONF_ROOT/credentials.conf"
+
+API_CALL_CONNECT_TIMEOUT_SEC=5
+API_CALL_TIMEOUT_SEC=60
+API_CALL_RETRIES=1
+
+LOG_FILE="$HOME/.${SELF}.log"
+
+AUTO_DELETE_DELAY=""  # if set, uploaded image(s) will be deleted after this delay
+COPY_URL_TO_CLIP=true
+ENABLE_NOTIFICATIONS=true
+NOTIFY_LEVEL=INFO  # 'INFO' if all levels should be notified; 'ERROR' if only errors should be notified
+
+############## END CONFIG ##############
+
+# config items above can be overridden in $CONF_FILE
+if [[ -s "$CONF_FILE" ]]; then
+	source "$CONF_FILE"
 fi
 
 
-errors=false
-if [ "$1" = "-d" -o "$1" = "--delete" ]; then
+while [[ "$1" == -* ]]; do
+	case "$1" in
+		-a|--album-id)
+			ALBUM_ID="$2"; shift 2 ;;
+		-t|--title)
+			TITLE="$2"; shift 2 ;;
+		-l|--login)
+			LOGIN="$2"; shift 2 ;;
+		-D|--auto-delete)
+			AUTO_DELETE_DELAY="$2"; shift 2 ;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		-v|--version)
+			info -NL "Version:  $VERSION"
+			exit 0
+			;;
+		-d|--delete) MODE=DELETE; shift ;;
+		--) shift; break ;;
+		*)
+			usage
+			exit 1
+			;;
+	esac
+done
+
+
+setup
+[[ $# -eq 0 ]] && { err -LN "no input given"; usage; exit 1; }
+[[ "$LOGIN" == true ]] && load_access_token
+
+if [[ "$MODE" == DELETE ]]; then
 	delete_images "$@"
 else
 	upload_images "$@"
 fi
 
-if $errors; then
-	exit 1
-fi
+exit $HAS_ERRORS
+

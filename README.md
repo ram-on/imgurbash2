@@ -1,13 +1,18 @@
 # imgurbash2
-imgurbash2 is a simple bash script that allows you to upload images to [imgur](https://imgur.com/).  Once an image is uploaded, the link is displayed on the terminal and copied to your clipboard (see below).
+imgurbash2 is a simple bash script that allows you to upload images to
+[imgur](https://imgur.com/). Once an image is uploaded, the link is displayed on the
+terminal and copied to your clipboard (see below).
 
 Tested on Linux and macOS.
 
 ## Features
 * Upload remote HTTP/HTTPS images to imgur.
-* Uploads multiple images at one go.
+* Upload multiple images at one go.
+* Upload images to specific album.
+* Authenticate imgur user.
 * Delete previously uploaded images.
-* Copies uploaded images' URLs to your clipboard.
+* Automatically delete uploaded images.
+* Copy uploaded images' URLs to clipboard.
 
 ## Usage
 ### Upload Local Images
@@ -18,9 +23,21 @@ imgurbash2 cow.png
 ```
 The above command will output something like this:
 ```bash
-http://i.imgur.com/HDVh123.png    (Delete Hash = vgdTM62vQ08xaxa)
+http://i.imgur.com/HDVh123.png (Delete Hash = wef2q3r)
+
 ```
-The first link is the URL of the uploaded image.  This URL is copied to you clipboard and hence you can use <kbd>CTRL</kbd>+<kbd>V</kbd> to paste it (provided that `xsel` or `xclip` is installed on Linux - no separate program is required for macOS).
+The first link is the URL of the uploaded image. This URL is copied to you clipboard
+and hence you can use <kbd>CTRL</kbd>+<kbd>V</kbd> to paste it (provided that `xsel`
+or `xclip` is installed on Linux - no separate program is required for macOS).
+
+### Upload image to your album
+
+To upload the image named cow.png to imgur album:
+```bash
+imgurbash2 -a abc134 cow.png
+```
+Image will be uploaded to album whose id is `abc134`. Note you most likely
+want to enable authentication in config file (or via `--login true` option).
 
 ### Upload Remote Images
 
@@ -33,13 +50,25 @@ imgurbash2  https://myserver.org/fish.png  ~/lion.png
 ### Delete images
 ```bash
 imgurbash2 ~/tmp/test.png
-http://i.imgur.com/HDVhl23.png    (Delete Hash = vgdTM62vQ08xaxa)
+http://i.imgur.com/HDVh123.png (Delete Hash = vgdTM62vQ08xaxa)
 ```
 
 To delete the above uploaded image:
 ```bash
 imgurbash2 -d vgdTM62vQ08xaxa
 ```
+
+### Automatically delete images after specified delay
+```bash
+imgurbash2 -D 5m ~/tmp/test.png
+```
+
+Uploaded image will automatically be deleted after 5 minutes.
+
+Note the deletion will be executed by backgrounded shell process,
+which means it assumes your computer won't be halted/suspended
+before the time has passed, and you still have external connection
+in order to call imgur api.
 
 ## Installation
 ### Linux / macOS / UN*X
@@ -58,6 +87,8 @@ yaourt -S imgurbash2
 | ------------------ | -------- | ------------- |
 | `curl`             | No       | Uploads images  |
 | `xsel` or `xclip`  | Yes      | Copies URL (image) link to clipboard if using Linux - no separate program is required for macOS |
+| `notify-send`      | Yes      | Provides notification messages; Linux  |
+| `growlnotify` or `terminal-notifier`      | Yes      | Provides notification messages; macOS  |
 
 ## License
 [MIT License](https://raw.githubusercontent.com/ram-on/imgurbash2/master/LICENSE)
