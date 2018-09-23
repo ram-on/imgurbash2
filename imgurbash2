@@ -65,42 +65,44 @@ declare -A COLORS=(
 # @returns {void}
 usage() {
 	echo "
-    Uploads images to imgur and output their imgurl URL link. It can also delete
-    previously uploaded images.
+Uploads images to imgur and output their imgurl URL link. It can also delete
+previously uploaded images.
 
-    The URL links are then copied to your clipboard, given required dependencies are found.
+The URL links are then copied to your clipboard, given required dependencies are
+found.
 
-    ${COLORS[GREEN]}Usage:${COLORS[OFF]}
-        ${COLORS[CYAN]}${SELF}${COLORS[OFF]} [option] <image1> [image2...]
+${COLORS[GREEN]}Usage:${COLORS[OFF]}
+    ${SELF} [options] <image1> [image2...]
 
-    Where
-        image* is a local file or a remote image (eg http://domain/myimage.png)
+${COLORS[GREEN]}Where:${COLORS[OFF]}
+    image* is a local file (e.g. ~/text.png) or a remote image (e.g.
+	http://domain/myimage.png).
 
-    ${COLORS[GREEN]}Options:${COLORS[OFF]}
-        ${COLORS[GREEN]}-d, --delete${COLORS[OFF]} <delete_hash1> [delete_hash2...]
-            Deletes image(s) based on supplied delete hash.
-        ${COLORS[GREEN]}-D, --auto-delete${COLORS[OFF]} <delay>
-            Where <delay> is how long we should wait before deletion; seconds
-            by default, but accepts [smhdwM] suffix; eg 20, 15m, 1h.
-            s - sec, m - min, h - hour, d - day, w - week, M - month (30d).
-            If provided, uploaded image(s) will be automatically deleted
-            after given time has elapsed; note this assumes your computer
-            won't be halted/suspended before the time has passed.
-        ${COLORS[GREEN]}-l, --login${COLORS[OFF]} <true|false>
-            state whether authenticated operation is required.
-            if 'true', then credentials need to be set up in
-            [$CREDENTIALS_FILE] beforehand.
-        ${COLORS[GREEN]}-a, --album-id${COLORS[OFF]} <id>
-            Id of an album if image to upload should belong in an album.
-        ${COLORS[GREEN]}-t, --title${COLORS[OFF]} <title>
-            Title for the image(s) to be uploaded
-        ${COLORS[GREEN]}-h, --help${COLORS[OFF]}
-            Displays this help.
-        ${COLORS[GREEN]}-v, --version${COLORS[OFF]}
-            Prints script version.
-    ${COLORS[GREEN]}Examples:${COLORS[OFF]}
-        Refer to https://github.com/ram-on/imgurbash2
-"
+${COLORS[GREEN]}Options:${COLORS[OFF]}
+    ${COLORS[GREEN]}-d, --delete${COLORS[OFF]} <delete_hash1> [delete_hash2...]
+        Deletes image(s) based on supplied delete hash.
+    ${COLORS[GREEN]}-D, --auto-delete${COLORS[OFF]} <delay>
+        Where <delay> is how long we should wait before deletion; seconds
+        by default, but accepts [smhdwM] suffix; eg 20, 15m, 1h.
+        s - sec, m - min, h - hour, d - day, w - week, M - month (30d).
+        If provided, uploaded image(s) will be automatically deleted
+        after given time has elapsed; note this assumes your computer
+        won't be halted/suspended before the time has passed.
+    ${COLORS[GREEN]}-l, --login${COLORS[OFF]} <true|false>
+        state whether authenticated operation is required.
+        if 'true', then credentials need to be set up in
+        [$CREDENTIALS_FILE] beforehand.
+    ${COLORS[GREEN]}-a, --album-id${COLORS[OFF]} <id>
+        Id of an album if image to upload should belong in an album.
+    ${COLORS[GREEN]}-t, --title${COLORS[OFF]} <title>
+        Title for the image(s) to be uploaded
+    ${COLORS[GREEN]}-h, --help${COLORS[OFF]}
+        Displays this help.
+    ${COLORS[GREEN]}-v, --version${COLORS[OFF]}
+        Prints script version.
+
+${COLORS[GREEN]}Examples:${COLORS[OFF]}
+    Refer to https://github.com/ram-on/imgurbash2"
 }
 
 
