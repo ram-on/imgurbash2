@@ -236,9 +236,9 @@ copy_to_clipboard() {
 	elif [[ -n "$DISPLAY" ]]; then
 		{ command -v xsel &>/dev/null && echo -n "$input" | xsel --input --clipboard; } \
 			|| { command -v xclip &>/dev/null && echo -n "$input" | xclip -selection clipboard; } \
-			|| err -L "Didn't copy to clipboard:  xsel or xclip are not installed."
+			|| info -L "Didn't copy to clipboard:  xsel or xclip are not installed."
 	else
-		err -L "Didn't copy to the clipboard:  no \$DISPLAY"
+		info -L "Didn't copy to the clipboard:  no \$DISPLAY"
 	fi
 }
 
