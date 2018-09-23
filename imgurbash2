@@ -39,7 +39,7 @@ readonly SELF=${0##*/}
 readonly CONF_ROOT="$HOME/.config/imgurbash2"
 
 readonly CONF_FILE="$CONF_ROOT/config"
-readonly VERSION=3
+readonly VERSION="3.0"
 readonly TOKEN_URL="https://api.imgur.com/oauth2/token"
 readonly JOB_ID="$$"
 uname | grep -q Darwin && IS_MAC=1 || IS_MAC=0
@@ -50,12 +50,8 @@ HAS_ERRORS=0  # flag indicating if any errors were encountered
 declare -A COLORS=(
 	[RED]=$'\033[0;31m'
 	[GREEN]=$'\033[0;32m'
-	[BLUE]=$'\033[0;34m'
-	[PURPLE]=$'\033[0;35m'
 	[CYAN]=$'\033[0;36m'
-	[WHITE]=$'\033[0;37m'
 	[YELLOW]=$'\033[0;33m'
-	[BOLD]=$'\033[1m'
 	[OFF]=$'\033[0m'
 )
 
@@ -64,6 +60,15 @@ declare -A COLORS=(
 #
 # @returns {void}
 usage() {
+	local linux_auto_delete_msg
+
+	if [[ "$IS_LINUX" -eq 1  ]]; then
+		linux_auto_delete_msg="
+        Also accepts [smhd] suffix where 's' for seconds (the default), 'm'
+        for minutes, 'h' for hours or 'd' for days.  E.g. '30m' means delete the
+        image after 30 minutes."
+	fi
+
 	echo "
 Uploads images to imgur and output their imgurl URL link. It can also delete
 previously uploaded images.
@@ -81,14 +86,13 @@ ${COLORS[GREEN]}Where:${COLORS[OFF]}
 ${COLORS[GREEN]}Options:${COLORS[OFF]}
     ${COLORS[GREEN]}-d, --delete${COLORS[OFF]} <delete_hash1> [delete_hash2...]
         Deletes image(s) based on supplied delete hash.  The delete hash is
-		outputted when the user uploads an image.
+        outputted when the user uploads an image.
     ${COLORS[GREEN]}-D, --auto-delete${COLORS[OFF]} <delay>
-        Where <delay> is how long we should wait before deletion; seconds
-        by default, but accepts [smhdwM] suffix; eg 20, 15m, 1h.
-        s - sec, m - min, h - hour, d - day, w - week, M - month (30d).
-        If provided, uploaded image(s) will be automatically deleted
-        after given time has elapsed; note this assumes your computer
-        won't be halted/suspended before the time has passed.
+        Where <delay> is how long we should wait before deletion in seconds.${linux_auto_delete_msg}
+        NOTE:  The deletion will be executed by backgrounded shell process,
+        which means it assumes your computer won't be halted/suspended before
+        the time has elapsed, and you still have external connection in order to
+        call imgur api.
     ${COLORS[GREEN]}-l, --login${COLORS[OFF]} <true|false>
         state whether authenticated operation is required.
         if 'true', then credentials need to be set up in
@@ -103,7 +107,7 @@ ${COLORS[GREEN]}Options:${COLORS[OFF]}
         Prints script version.
 
 ${COLORS[GREEN]}Examples:${COLORS[OFF]}
-    Refer to https://github.com/ram-on/imgurbash2"
+    Refer to https://github.com/ram-on/imgurbash2/blob/master/examples.md"
 }
 
 
@@ -290,7 +294,7 @@ copy_to_clipboard() {
 }
 
 
-# Uploads given image(s) to imgur
+# Uploads given image(s) to imgur.  URLs are then copied to clipboard
 #
 # @param {string...}  files  files to upload.
 #
@@ -310,13 +314,11 @@ upload_images() {
 		dhash="$(parse_str_field "$response" deletehash)"
 		[[ -z "$dhash" ]] && err "no deletehash found in image [$file] upload response [$response]"
 
-		info -NS "[$file] uploaded: $url deletehash=[$dhash] (https://imgur.com/delete/${dhash})"
-		info -LS "[$file] uploaded"
-		echo -e "$url (Delete Hash = $dhash)"  # keep old stdout message for backwards compatibility
-
 		if [[ -n "$AUTO_DELETE_DELAY" ]]; then
-			info "Deleting image [$url] in $AUTO_DELETE_DELAY"
-			nohup /bin/bash -c "sleep $AUTO_DELETE_DELAY_SEC && delete_image_auto '$dhash' '$url'" &>/dev/null &
+			echo "$url (Deleting image in $AUTO_DELETE_DELAY)"
+			nohup /usr/bin/env bash -c "sleep $AUTO_DELETE_DELAY_SEC && delete_image_auto '$dhash' '$url'" &>/dev/null &
+		else
+			echo -e "$url (Delete Hash = $dhash)"
 		fi
 
 		urls+=("$url")
@@ -450,7 +452,6 @@ info() {
 #
 # @returns {void}
 setup() {
-
 	[[ -d "$CONF_ROOT" ]] || mkdir -p -- "$CONF_ROOT"
 	[[ "${BASH_VERSINFO[0]}" -lt 4 ]] && fail "bash ver 4 or above required, you have [${BASH_VERSINFO[0]}]"
 	check_dependencies || fail -L "please install required dependencies"
@@ -679,7 +680,7 @@ delete_image_auto() {
 ############# START CONFIG #############
 LOGIN=false  # true if we should authenticate with our own user.
 ALBUM_ID=""
-ANON_CLIENT_ID=f9012166f47bc38  # client_id to use for non-authenticated operations
+ANON_CLIENT_ID=4f0d009df8e7de6  # client_id to use for non-authenticated operations
 CREDENTIALS_FILE="$CONF_ROOT/credentials.conf"
 
 API_CALL_CONNECT_TIMEOUT_SEC=5
@@ -716,7 +717,7 @@ while [[ "$1" == -* ]]; do
 			exit 0
 			;;
 		-v|--version)
-			info -NL "Version:  $VERSION"
+			echo "${SELF} $VERSION"
 			exit 0
 			;;
 		-d|--delete) MODE=DELETE; shift ;;
