@@ -41,8 +41,8 @@ readonly CREDENTIALS_FILE="$CONF_ROOT/credentials.conf"
 readonly ANON_CLIENT_ID=4f0d009df8e7de6  # client_id to use for non-authenticated operations
 readonly TOKEN_URL="https://api.imgur.com/oauth2/token"
 readonly JOB_ID="$$"
-uname | grep -q Darwin && IS_MAC=1 || IS_MAC=0
-uname | grep -q Linux && IS_LINUX=1 || IS_LINUX=0
+uname | grep -q Darwin && IS_MACOS=true || IS_MACOS=false
+uname | grep -q Linux && IS_LINUX=true || IS_LINUX=false
 
 HAS_ERRORS=0  # flag indicating if any errors were encountered
 
@@ -232,12 +232,12 @@ copy_to_clipboard() {
 
 	input="$(printf "${1// /\\n}")"
 
-	if [[ "$IS_MAC" -eq 1 ]]; then
+	if [[ "$IS_MACOS" == true ]]; then
 		pbcopy <<< "$input"
 	elif [[ -n "$DISPLAY" ]]; then
 		{ command -v xsel &>/dev/null && echo -n "$input" | xsel --input --clipboard; } \
 			|| { command -v xclip &>/dev/null && echo -n "$input" | xclip -selection clipboard; } \
-			|| err -L "Didn't copy to clipboard:  xsel nor xclip are installed"
+			|| err -L "Didn't copy to clipboard:  xsel or xclip are not installed."
 	else
 		err -L "Didn't copy to the clipboard:  no \$DISPLAY"
 	fi
@@ -580,11 +580,9 @@ refresh_access_token() {
 #
 # @returns {void}
 persist_tokens() {
-	local expires_in key val tmp
+	local expires_in key val
 
 	expires_in="$1"
-
-	tmp="/tmp/.${SELF}-$RANDOM"
 
 	if ! [[ "$ACCESS_TOKEN" =~ ^[0-9a-z]+$ ]]; then
 		fail "[access_token] is not in valid format: [$ACCESS_TOKEN]"
@@ -598,19 +596,17 @@ persist_tokens() {
 
 	# replace values in $CREDENTIALS_FILE with new ones:
 	for key in ACCESS_TOKEN REFRESH_TOKEN TOKEN_EXPIRE_TIME; do
-		# first remove existing value:
-		if [[ "$IS_LINUX" -eq 1 ]]; then
+		# first remove existing value by deleting that line from the
+		# configuration file
+		if [[ "$IS_LINUX" == true ]]; then
 			sed --follow-symlinks -i "/$key/d" "$CREDENTIALS_FILE"
 		else
-			cp -- "$CREDENTIALS_FILE" "$tmp"
-			sed "/$key/d" < "$tmp" > "$CREDENTIALS_FILE"
+			sed -i "" "/$key/d" "$CREDENTIALS_FILE"
 		fi
 
 		val="$(eval echo "\$$key")"
 		echo "${key}='$val'" >> "$CREDENTIALS_FILE"
 	done
-
-	[[ -f "$tmp" ]] && rm -f -- "$tmp"
 }
 
 
