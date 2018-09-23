@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2016-2017 Ramon <https://github.com/ram-on/imgurbash2>
+# Copyright (c) 2016-2018 Ramon <https://github.com/ram-on/imgurbash2>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -537,25 +537,40 @@ init_auth() {
 		sed -e 's#.*'$1'=\([^&]*\).*#\1#' <<< "$url"
 	}
 
+	echo "Create an imgur account by visiting ${COLORS[CYAN]}https://api.imgur.com/oauth2/addclient${COLORS[OFF]} and
+then register this application by:
+1. Filling in the 'Application Name' and 'Email' fields; and
+2. Set the authorisation type to 'OAuth 2 authorization without a callback URL'.
+
+TRIVIA:
+1. Ensure that your imgur account's email address has been verified.
+2. If you get a 403 'forbidden' error message after filling the below fields,
+   then it is recommended that your account's email address is changed to a
+   mainstream email provider (such as gmail).
+3. Credential details will be saved in the following file:  $CREDENTIALS_FILE
+
+Fill in the below fields:
+"
+
 	if [[ -z "$CLIENT_ID" ]]; then
-		read -r -p 'imgur client ID: ' CLIENT_ID
+		read -r -p '* imgur client ID: ' CLIENT_ID
 		[[ -z "$CLIENT_ID" ]] && fail -NL "no clientId given, abort"
 		echo "CLIENT_ID='$CLIENT_ID'" >> "$CREDENTIALS_FILE"
 	fi
 
 	if [[ -z "$CLIENT_SECRET" ]]; then
-		read -r -p 'imgur client secret: ' CLIENT_SECRET
+		read -r -p '* imgur client secret: ' CLIENT_SECRET
 		[[ -z "$CLIENT_SECRET" ]] && fail -NL "no client secret given, abort"
 		echo "CLIENT_SECRET='$CLIENT_SECRET'" >> "$CREDENTIALS_FILE"
 	fi
 
 	if [[ -z "$REFRESH_TOKEN" ]]; then
 		url="https://api.imgur.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=token"
-		info -NL "please open [${COLORS[CYAN]}${url}${COLORS[OFF]}] in browser"
-		info -NL "and copy the resulting redirect url in here"
-
-		read -r -p 'redirect url: ' url
-		[[ "$url" == *access_token* && "$url" == *refresh_token* ]] || fail -NL "given redirect url [$url] doesn't look right"
+		echo "* Open ${COLORS[CYAN]}${url}${COLORS[OFF]}"
+		echo "  in browser and give access to this application by clicking on the 'Accept'"
+		read -r -p '  button.  Then copy the resulting redirect URL in here: ' url
+		echo
+		[[ "$url" == *access_token* && "$url" == *refresh_token* ]] || fail -NL "The given redirect url [$url] doesn't look right."
 
 		ACCESS_TOKEN="$(_parse access_token)"
 		REFRESH_TOKEN="$(_parse refresh_token)"
@@ -722,4 +737,3 @@ else
 fi
 
 exit $HAS_ERRORS
-
