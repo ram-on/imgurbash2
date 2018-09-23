@@ -41,6 +41,17 @@ imgurbash2 -l -a xaxarqs raven.png
 your album.
 
 
+### Add Title To Images
+
+You can add a title to the image you'd like to upload:
+```bash
+imgurbash2 -t "My Title" bird.png
+```
+
+A title can be assigned to any image uploaded to your album:
+```bash
+imgurbash2 -l -a xaxarqs -t "Bird Is The Word" bird.png
+```
 
 
 ## Delete images
