@@ -50,7 +50,6 @@ declare -A COLORS=(
 	[RED]=$'\033[0;31m'
 	[GREEN]=$'\033[0;32m'
 	[CYAN]=$'\033[0;36m'
-	[YELLOW]=$'\033[0;33m'
 	[OFF]=$'\033[0m'
 )
 
@@ -60,13 +59,6 @@ declare -A COLORS=(
 # @returns {void}
 usage() {
 	local linux_auto_delete_msg
-
-	if [[ "$IS_LINUX" -eq 1  ]]; then
-		linux_auto_delete_msg="
-        Also accepts [smhd] suffix where 's' for seconds (the default), 'm'
-        for minutes, 'h' for hours or 'd' for days.  E.g. '30m' means delete the
-        image after 30 minutes."
-	fi
 
 	echo "
 Uploads images to imgur and output their imgurl URL link. It can also delete
@@ -80,18 +72,21 @@ ${COLORS[GREEN]}Usage:${COLORS[OFF]}
 
 ${COLORS[GREEN]}Where:${COLORS[OFF]}
     image* is a local file (e.g. ~/text.png) or a remote image (e.g.
-	http://domain/myimage.png).
+    http://domain/myimage.png).
 
 ${COLORS[GREEN]}Options:${COLORS[OFF]}
     ${COLORS[GREEN]}-d, --delete${COLORS[OFF]} <delete_hash1> [delete_hash2...]
         Deletes image(s) based on supplied delete hash.  The delete hash is
         outputted when the user uploads an image.
     ${COLORS[GREEN]}-D, --auto-delete${COLORS[OFF]} <delay>
-        Where <delay> is how long we should wait before deletion in seconds.${linux_auto_delete_msg}
+        Where <delay> is how long we should wait before deletion in seconds.
+        Also accepts [smhdwM] suffix, where 's' for seconds (the default), 'm'
+        for minutes, 'h' for hours, 'd' for days, 'w' for weeks and 'M' for
+        months.  E.g. '30m' means delete the image after 30 minutes.
         NOTE:  The deletion will be executed by backgrounded shell process,
         which means it assumes your computer won't be halted/suspended before
         the time has elapsed, and you still have external connection in order to
-        call imgur api.
+        call imgur API.
     ${COLORS[GREEN]}-l, --login${COLORS[OFF]} <true|false>
         state whether authenticated operation is required.
         if 'true', then credentials need to be set up in
@@ -162,9 +157,10 @@ api_call() {
 
 # Uploads given image to imgur.
 #
-# @param {string}  file   path to local image file, or external URL.
+# @param {string}		file path to local image file, or external URL.
 #
-# @returns {string}  response body, as returned by curl.
+# @returns {string}		response body, as returned by curl; return 1 if the file
+#						supplied does not exist.
 upload_image() {
 	local file hdrs
 
@@ -180,7 +176,7 @@ upload_image() {
 		# TODO: only works when album_id not defined?
 		hdrs+=('--data-urlencode' "image=$file")
 	else
-		err "File [$file] does not exist, skipping"
+		# file does NOT exist...
 		return 1
 	fi
 
@@ -259,8 +255,22 @@ upload_images() {
 	declare -a files=("$@")
 
 	for file in "${files[@]}"; do
+		# upload image to imgur
 		response="$(upload_image "$file")"
-		is_request_success "$response" || { err "Uploading [$file] failed"; HAS_ERRORS=1; continue; }
+
+		# upload_image() returns 1 if the file does not exist
+		if [[ "$?" -eq 1 ]]; then
+			err "File [$file] does not exist, skipping"
+			continue
+		fi
+
+		# analyze the request status
+		request_status=$(is_request_success "$response")
+		if [[ "$?" -eq 1 ]]; then
+			err "Upload failed for $file:  ${request_status}";
+			HAS_ERRORS=1;
+			continue;
+		fi
 
 		# get image url link
 		url="$(parse_str_field "$response" link | sed -e 's/\\//g')"
@@ -293,10 +303,17 @@ delete_images() {
 	declare -a hashes=("$@")
 
 	for hash in "${hashes[@]}"; do
+		# delete the image from imgur
 		response="$(api_call -r "image/${hash}" -X DELETE)"
-		is_request_success "$response" || { err "Deleting hash [$hash] failed"; HAS_ERRORS=1; continue; }
 
-		info "Deletion OK:  $hash"
+		# analyze the request status
+		request_status=$(is_request_success "$response")
+		if [[ "$?" -eq 1 ]]; then
+			err "Deletion failed for $hash:  ${request_status}";
+			HAS_ERRORS=1;
+		else
+			info "Deletion OK:  $hash"
+		fi
 	done
 }
 
@@ -317,7 +334,7 @@ is_request_success() {
 		status="$(parse_nonstr_field "$response" status)"
 		error="$(parse_str_field "$response" error)"
 
-		err "Request failed with status [$status]: $error"
+		echo "Request failed with status [$status]: $error"
 		return 1
 	fi
 
@@ -344,7 +361,7 @@ err() {
 
 	msg="$1"
 
-	>&2 echo -e "ERROR: ${msg:-"ERR"}" 1>&2
+	>&2 echo -e "${COLORS[RED]}ERROR:${COLORS[OFF]}  ${msg:-"ERR"}" 1>&2
 
 	if [[ $DISABLE_LOGGING != true ]]; then
 		if [[ "$no_log" -ne 1 ]]; then
@@ -426,8 +443,9 @@ setup() {
 # @returns {void}
 sanitize_auto_delete_delay() {
 	local to_sec_conversions suffix
+	AUTO_DELETE_DELAY=$1
 
-	[[ "$AUTO_DELETE_DELAY" =~ ^[0-9]+[smhdwM]?$ ]] || fail "incorrect delay param provided: [$AUTO_DELETE_DELAY]"
+	[[ "$AUTO_DELETE_DELAY" =~ ^[0-9]+[smhdwM]?$ ]] || fail "Incorrect delay parameter provided: [$AUTO_DELETE_DELAY]"
 
 	declare -Ar to_sec_conversions=(
 		[s]=1
@@ -609,12 +627,15 @@ delete_image_auto() {
 	dhash="$1"
 	url="$2"
 
+	# delete the image from imgur
 	response="$(api_call -r "image/${dhash}" -X DELETE)"
 
-	if is_request_success "$response"; then
-		info "Image successfully deleted (delete hash: $dhash)."
+	# analyze the request status
+	request_status=$(is_request_success "$response")
+	if [[ "$?" -eq 1 ]]; then
+		err "Deletion failed for $url (Delete hash = $hash):  ${request_status}";
 	else
-		err "image @ [$url] could not be deleted (delete hash $dhash): ${response}."
+		info "Image successfully deleted (delete hash: $dhash)."
 	fi
 }
 
@@ -655,7 +676,7 @@ while [[ "$1" == -* ]]; do
 		-l|--login)
 			LOGIN="$2"; shift 2 ;;
 		-D|--auto-delete)
-			AUTO_DELETE_DELAY="$2"; shift 2 ;;
+			sanitize_auto_delete_delay "$2";  shift 2 ;;
 		-h|--help)
 			usage
 			exit 0
