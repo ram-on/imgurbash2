@@ -29,12 +29,16 @@ imgurbash2  https://myserver.org/fish.png  ~/lion.png
 
 ### Upload to Album
 
-To upload the image named cow.png to imgur album:
+To upload the image named raven.png to your imgur album whose ID is `xaxarqs`:
 ```bash
-imgurbash2 -l true -a abc134 raven.png
+imgurbash2 -l true -a xaxarqs raven.png
 ```
 
-The image will be uploaded to your album whose ID is `abc134`.
+**NOTE 1**:  Album ID can be determained by analyzing the album's URL.  For example,
+`https://imgur.com/a/xaxarqs` means that the ablum ID is `xaxarqs`.
+
+**NOTE 2**:  The `-l` or `--login` argument is required in order to authenticate and upload to
+your album.
 
 
 
@@ -52,14 +56,13 @@ imgurbash2 -d vgdTM62vQ08xaxa
 
 ### Automatically Image Deletion
 
-Uploaded image will automatically be deleted after 600 seconds (or 10 minutes):
+Uploaded image will automatically be deleted after 10 minutes:
 
 ```bash
-imgurbash2 -D 600 cake.png
+imgurbash2 -D 10m cake.png
 ```
 
-On Linux (and any other system using the GNU toolkit), the script also accepts
-[smhd] suffix.  For example, auto-delete the image after 5 hours:
+Here, the uploaded image will be deleted after 5 hours:
 
 ```bash
 imgurbash2 -D 5h lobster.png
@@ -69,4 +72,4 @@ imgurbash2 -D 5h lobster.png
 **NOTE**:  The deletion will be executed by backgrounded shell process,
 which means it assumes your computer won't be halted/suspended
 before the time has passed, and you still have external connection
-in order to call imgur api.
+in order to call imgur API.
