@@ -87,14 +87,13 @@ ${COLORS[GREEN]}Options:${COLORS[OFF]}
         which means it assumes your computer won't be halted/suspended before
         the time has elapsed, and you still have external connection in order to
         call imgur API.
-    ${COLORS[GREEN]}-l, --login${COLORS[OFF]} <true|false>
-        state whether authenticated operation is required.
-        if 'true', then credentials need to be set up in
-        [$CREDENTIALS_FILE] beforehand.
+    ${COLORS[GREEN]}-l, --login${COLORS[OFF]}
+        State that authenticated operation is required.  Used to upload images
+        to your personal album/account.
     ${COLORS[GREEN]}-a, --album-id${COLORS[OFF]} <id>
-        Id of an album if image to upload should belong in an album.
+        ID of the album which will host the uploaded image.
     ${COLORS[GREEN]}-t, --title${COLORS[OFF]} <title>
-        Title for the image(s) to be uploaded
+        Title for the image(s) to be uploaded.
     ${COLORS[GREEN]}-h, --help${COLORS[OFF]}
         Displays this help.
     ${COLORS[GREEN]}-v, --version${COLORS[OFF]}
@@ -670,7 +669,7 @@ while [[ "$1" == -* ]]; do
 		-t|--title)
 			TITLE="$2"; shift 2 ;;
 		-l|--login)
-			LOGIN="$2"; shift 2 ;;
+			LOGIN="true"; shift 1 ;;
 		-D|--auto-delete)
 			sanitize_auto_delete_delay "$2";  shift 2 ;;
 		-h|--help)
