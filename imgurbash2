@@ -346,8 +346,10 @@ err() {
 
 	>&2 echo -e "ERROR: ${msg:-"ERR"}" 1>&2
 
-	if [[ "$no_log" -ne 1 ]]; then
-		echo "    ERROR: [$JOB_ID] $msg" >> "$LOG_FILE"
+	if [[ $DISABLE_LOGGING != true ]]; then
+		if [[ "$no_log" -ne 1 ]]; then
+			echo "    ERROR ["$(date '+%Y-%m-%dT%H:%M:%S')" - $JOB_ID]  $msg" >> "$LOG_FILE"
+		fi
 	fi
 }
 
@@ -384,8 +386,10 @@ info() {
 		>&2 echo -e "${msg:-"--info lvl message placeholder--"}"
 	fi
 
-	if [[ "$no_log" -ne 1 ]]; then
-		echo "INFO [$JOB_ID] $msg" >> "$LOG_FILE"
+	if [[ $DISABLE_LOGGING != true ]]; then
+		if [[ "$no_log" -ne 1 ]]; then
+			echo "INFO ["$(date '+%Y-%m-%dT%H:%M:%S')" - $JOB_ID]  $msg" >> "$LOG_FILE"
+		fi
 	fi
 }
 
@@ -408,6 +412,10 @@ setup() {
 	if [[ ! -s "$CONF_FILE" ]]; then
 		echo "# Set to true to copy URLs of uploaded images to your clipboard" >> "$CONF_FILE"
 		echo "COPY_URL_TO_CLIP=true" >> "$CONF_FILE"
+		echo >> "$CONF_FILE"
+
+		echo "# Enable/Disable information being logged within a log file" >> "$CONF_FILE"
+		echo "DISABLE_LOGGING=true" >> "$CONF_FILE"
 	fi
 }
 
