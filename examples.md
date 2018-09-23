@@ -51,11 +51,20 @@ imgurbash2 -d vgdTM62vQ08xaxa
 ```
 
 ### Automatically Image Deletion
+
+Uploaded image will automatically be deleted after 600 seconds (or 10 minutes):
+
 ```bash
-imgurbash2 -D 5m ~/tmp/test.png
+imgurbash2 -D 600 cake.png
 ```
 
-Uploaded image will automatically be deleted after 5 minutes.
+On Linux (and any other system using the GNU toolkit), the script also accepts
+[smhd] suffix.  For example, auto-delete the image after 5 hours:
+
+```bash
+imgurbash2 -D 5h lobster.png
+```
+
 
 **NOTE**:  The deletion will be executed by backgrounded shell process,
 which means it assumes your computer won't be halted/suspended
