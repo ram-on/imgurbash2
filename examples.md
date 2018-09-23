@@ -23,7 +23,7 @@ or `xclip` is installed on Linux - no separate program is required for macOS).
 It is also possible to upload remote images (HTTP/HTTPS) to imgur.  The following command
 will upload a remote image fish.png and (local image) lion.png
 ```bash
-imgurbash2  https://myserver.org/fish.png  ~/lion.png
+imgurbash2  https://myserver.org/fish.png  ~/tmp/lion.png
 ```
 
 
@@ -31,7 +31,7 @@ imgurbash2  https://myserver.org/fish.png  ~/lion.png
 
 To upload the image named raven.png to your imgur album whose ID is `xaxarqs`:
 ```bash
-imgurbash2 -l true -a xaxarqs raven.png
+imgurbash2 -l -a xaxarqs raven.png
 ```
 
 **NOTE 1**:  Album ID can be determained by analyzing the album's URL.  For example,
@@ -44,8 +44,11 @@ your album.
 
 
 ## Delete images
+
+Assume you've uploaded an image and the application outputed the following:
+
 ```bash
-imgurbash2 ~/tmp/test.png
+imgurbash2 dog.png
 http://i.imgur.com/HDVh123.png (Delete Hash = vgdTM62vQ08xaxa)
 ```
 
@@ -54,12 +57,18 @@ To delete the above uploaded image:
 imgurbash2 -d vgdTM62vQ08xaxa
 ```
 
+You can mass delete previously uploaded image:
+```bash
+imgurbash2 -d vgdTM62vQ08xaxa VZTheonfu2i300q
+```
+
+
 ### Automatically Image Deletion
 
 Uploaded image will automatically be deleted after 10 minutes:
 
 ```bash
-imgurbash2 -D 10m cake.png
+imgurbash2 -D 10m shark.png
 ```
 
 Here, the uploaded image will be deleted after 5 hours:
