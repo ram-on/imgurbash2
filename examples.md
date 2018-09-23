@@ -27,7 +27,7 @@ imgurbash2  https://myserver.org/fish.png  ~/tmp/lion.png
 ```
 
 
-### Upload to Album
+### Upload to Your Album
 
 To upload the image named raven.png to your imgur album whose ID is `xaxarqs`:
 ```bash
@@ -35,11 +35,21 @@ imgurbash2 -l -a xaxarqs raven.png
 ```
 
 **NOTE 1**:  Album ID can be determained by analyzing the album's URL.  For example,
-`https://imgur.com/a/xaxarqs` means that the ablum ID is `xaxarqs`.
+`https://imgur.com/a/xaxarqs` means that the ablum ID is `xaxarqs`.  Your alblums should be
+avaliable at `https://<your_username>.imgur.com/`
 
 **NOTE 2**:  The `-l` or `--login` argument is required in order to authenticate and upload to
 your album.
 
+
+### Upload to Your Account
+
+You can upload an image to your accout:
+```bash
+imgurbash2 -l parrot.png
+```
+
+Such images are uploaded to `https://<your_username>.imgur.com/all`.
 
 ### Add Title To Images
 
@@ -88,8 +98,17 @@ Here, the uploaded image will be deleted after 5 hours:
 imgurbash2 -D 5h lobster.png
 ```
 
-
 **NOTE**:  The deletion will be executed by backgrounded shell process,
 which means it assumes your computer won't be halted/suspended
 before the time has passed, and you still have external connection
 in order to call imgur API.
+
+
+
+# Configuration File
+
+Configuration file is located at `$HOME/.config/imgurbash2/config`.  The 
+following variables are kept within such file:
+
+* `COPY_URL_TO_CLIP`:  Enable/Disable clipboard URL copying.
+* `DISABLE_LOGGING`:  Enable/Disable logging.  Logs are kept at `$HOME/.imgurbash2.log`
