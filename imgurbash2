@@ -80,7 +80,8 @@ ${COLORS[GREEN]}Where:${COLORS[OFF]}
 
 ${COLORS[GREEN]}Options:${COLORS[OFF]}
     ${COLORS[GREEN]}-d, --delete${COLORS[OFF]} <delete_hash1> [delete_hash2...]
-        Deletes image(s) based on supplied delete hash.
+        Deletes image(s) based on supplied delete hash.  The delete hash is
+		outputted when the user uploads an image.
     ${COLORS[GREEN]}-D, --auto-delete${COLORS[OFF]} <delay>
         Where <delay> is how long we should wait before deletion; seconds
         by default, but accepts [smhdwM] suffix; eg 20, 15m, 1h.
@@ -339,7 +340,7 @@ delete_images() {
 		response="$(api_call -r "image/${hash}" -X DELETE)"
 		is_request_success "$response" || { err "deleting hash [$hash] failed"; HAS_ERRORS=1; continue; }
 
-		info "Deletion OK:  $hash"
+		echo "Deletion OK:  $hash"
 	done
 }
 
