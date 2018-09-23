@@ -16,9 +16,9 @@ Tested on Linux, macOS and FreeBSD.
 ## Usage
 ### Upload Images
 
-To upload the image named cow.png to imgur:
+Upload the images named cow.png and fish.jpg to imgur:
 ```bash
-imgurbash2 cow.png fish.png
+imgurbash2 cow.png https://myserver.io/fish.jpg
 ```
 
 The above command will output something like this:
@@ -27,9 +27,8 @@ http://i.imgur.com/HDVh123.png (Delete Hash = mo02q3r)
 http://i.imgur.com/QCfh256.png (Delete Hash = blub1qx)
 ```
 
-The first link is the URL of the uploaded image. This URL is copied to you clipboard
-and hence you can use <kbd>CTRL</kbd>+<kbd>V</kbd> to paste it (provided that `xsel`
-or `xclip` is installed on Linux - no separate program is required for macOS).
+The outputted links are the URLs of the uploaded images. Such URLs are copied to
+your clipboard if the right programs are installed.
 
 ### Upload image to your album
 
@@ -58,6 +57,7 @@ Uploaded image will automatically be deleted after 5 minutes.
 
 ### Manual
 More examaples and a detailed manual is available at https://github.com/ram-on/imgurbash2/blob/master/examples.md.
+Configuration details are also explained.
 
 
 ## Installation
