@@ -503,8 +503,9 @@ init_auth() {
 		sed -e 's#.*'$1'=\([^&]*\).*#\1#' <<< "$url"
 	}
 
-	echo "Create an imgur account by visiting ${COLORS[CYAN]}https://api.imgur.com/oauth2/addclient${COLORS[OFF]} and
-then register this application by:
+	echo "Account authentication is required to upload images to you account and to your
+personal albums.  In order to authenticate you need to visit
+${COLORS[CYAN]}https://api.imgur.com/oauth2/addclient${COLORS[OFF]} and then register this application by:
 1. Filling in the 'Application Name' and 'Email' fields; and
 2. Set the authorisation type to 'OAuth 2 authorization without a callback URL'.
 
@@ -533,7 +534,7 @@ Fill in the below fields:
 	if [[ -z "$REFRESH_TOKEN" ]]; then
 		url="https://api.imgur.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=token"
 		echo "* Open ${COLORS[CYAN]}${url}${COLORS[OFF]}"
-		echo "  in browser and give access to this application by clicking on the 'Accept'"
+		echo "  in browser and give access to this application by clicking on the 'Allow'"
 		read -r -p '  button.  Then copy the resulting redirect URL in here: ' url
 		echo
 		[[ "$url" == *access_token* && "$url" == *refresh_token* ]] || fail -NL "The given redirect url [$url] doesn't look right."
