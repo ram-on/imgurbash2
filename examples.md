@@ -11,6 +11,7 @@
 	* [Delete Images](#delete-images)
 	* [Automatic Image Deletion](#automatic-image-deletion)
 * [Configuration File](#configuration-file)
+* [Trivia](#trivia)
 
 ## Examples
 
@@ -35,7 +36,7 @@ or `xclip` is installed on Linux - no separate program is required for macOS).
 It is also possible to upload remote images (HTTP/HTTPS) to imgur.  The following command
 will upload a remote image fish.png and (local image) lion.png
 ```bash
-imgurbash2  https://myserver.org/fish.png  ~/tmp/lion.png
+imgurbash2  https://myserver.org/fish.png  ~/tmp/lion.jpg
 ```
 
 
@@ -53,6 +54,9 @@ avaliable at `https://<your_username>.imgur.com/`
 **NOTE 2**:  The `-l` or `--login` argument is required in order to authenticate and upload to
 your album.
 
+**NOTE 3**:  Please refer to the [Trivia section](#trivia) if you are getting weird errors when
+executing the above command.
+
 
 ### Upload to Your Account
 
@@ -62,6 +66,7 @@ imgurbash2 -l parrot.png
 ```
 
 Such images are uploaded to `https://<your_username>.imgur.com/all`.
+
 
 ### Add Title To Images
 
@@ -124,3 +129,12 @@ following variables are kept within such file:
 
 * `COPY_URL_TO_CLIP`:  Enable/Disable clipboard URL copying.
 * `DISABLE_LOGGING`:  Enable/Disable logging.  Logs are kept at `$HOME/.config/imgurbash2/log`
+
+
+## Trivia
+
+If imgurbash2 is returning errors when executing `imgurbash2 -l ...`:
+
+1. Ensure that your imgur account's email address has been verified.
+2. If you get a 403 'forbidden' error message: it is recommended that your account's email address
+   is changed to a mainstream email provider (such as Gmail).
