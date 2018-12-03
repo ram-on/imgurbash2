@@ -1,8 +1,23 @@
-# Examples
+# Manual
 
-## Upload Images
+## Contents
 
-### Upload Local Images
+* [Examples](#examples)
+    * [Upload Images](#upload-images)
+	    * [Upload Local Images](#upload-local-images)
+		* [Upload Remote Images](#upload-remote-images)
+		* [Upload to Your Album](#upload-to-your-album)
+		* [Upload to Your Account](#upload-to-your-account)
+		* [Add Title To Images](#add-title-to-images)
+	* [Delete Images](#delete-images)
+		* [Automatic Image Deletion](#automatic-image-deletion)
+* [Configuration File](#configuration-file)
+
+## Examples
+
+### Upload Images
+
+#### Upload Local Images
 
 To upload the image named cow.png to imgur:
 ```bash
@@ -18,7 +33,7 @@ and hence you can use <kbd>CTRL</kbd>+<kbd>V</kbd> to paste it (provided that `x
 or `xclip` is installed on Linux - no separate program is required for macOS).
 
 
-### Upload Remote Images
+#### Upload Remote Images
 
 It is also possible to upload remote images (HTTP/HTTPS) to imgur.  The following command
 will upload a remote image fish.png and (local image) lion.png
@@ -27,7 +42,7 @@ imgurbash2  https://myserver.org/fish.png  ~/tmp/lion.png
 ```
 
 
-### Upload to Your Album
+#### Upload to Your Album
 
 To upload the image named raven.png to your imgur album whose ID is `xaxarqs`:
 ```bash
@@ -42,7 +57,7 @@ avaliable at `https://<your_username>.imgur.com/`
 your album.
 
 
-### Upload to Your Account
+#### Upload to Your Account
 
 You can upload an image to your accout:
 ```bash
@@ -51,7 +66,7 @@ imgurbash2 -l parrot.png
 
 Such images are uploaded to `https://<your_username>.imgur.com/all`.
 
-### Add Title To Images
+#### Add Title To Images
 
 You can add a title to the image you'd like to upload:
 ```bash
@@ -64,7 +79,7 @@ imgurbash2 -l -a xaxarqs -t "Bird Is The Word" bird.png
 ```
 
 
-## Delete images
+### Delete Images
 
 Assume you've uploaded an image and the application outputed the following:
 
@@ -84,7 +99,7 @@ imgurbash2 -d vgdTM62vQ08xaxa VZTheonfu2i300q
 ```
 
 
-### Automatically Image Deletion
+#### Automatic Image Deletion
 
 Uploaded image will automatically be deleted after 10 minutes:
 
@@ -105,10 +120,10 @@ in order to call imgur API.
 
 
 
-# Configuration File
+## Configuration File
 
 Configuration file is located at `$HOME/.config/imgurbash2/config`.  The 
 following variables are kept within such file:
 
 * `COPY_URL_TO_CLIP`:  Enable/Disable clipboard URL copying.
-* `DISABLE_LOGGING`:  Enable/Disable logging.  Logs are kept at `$HOME/.imgurbash2.log`
+* `DISABLE_LOGGING`:  Enable/Disable logging.  Logs are kept at `$HOME/.config/imgurbash2/log`
