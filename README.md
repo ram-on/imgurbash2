@@ -30,14 +30,14 @@ http://i.imgur.com/QCfh256.png (Delete Hash = blub1qx)
 The outputted links are the URLs of the uploaded images. Such URLs are copied to
 your clipboard if the right programs are installed.
 
-### Upload image to your album
+### Upload To Your Album
 
 Upload the image named cow.png to your imgur album:
 ```bash
 imgurbash2 -l -a abc134 cow.png
 ```
 
-### Delete images
+### Delete Images
 ```bash
 imgurbash2 ~/tmp/test.png
 http://i.imgur.com/HDVh123.png (Delete Hash = vgdTM62vQ08xaxa)
@@ -55,9 +55,10 @@ imgurbash2 -D 5m ~/tmp/test.png
 
 Uploaded image will automatically be deleted after 5 minutes.
 
-### Manual
+
+## Manual
 More examaples and a detailed manual is available at https://github.com/ram-on/imgurbash2/blob/master/examples.md.
-Configuration details are also explained.
+Details about the configuration file are also explained.
 
 
 ## Installation
@@ -75,6 +76,7 @@ yay -S imgurbash2
 ## Dependencies
 | Program            | Optional | Reason |
 | ------------------ | -------- | ------------- |
+| `bash` 4.0+        | No       | To run this script.  Given that macOS ships with an old Bash version, it is recommended that the latest Bash is installed via `brew install bash`  |
 | `curl`             | No       | Uploads images  |
 | `xsel` or `xclip`  | Yes      | Copies URL (image) link to clipboard if using Linux - no separate program is required for macOS |
 
