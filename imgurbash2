@@ -431,7 +431,7 @@ setup() {
 		echo >> "$CONF_FILE"
 
 		echo "# Enable/Disable information being logged within a log file" >> "$CONF_FILE"
-		echo "DISABLE_LOGGING=true" >> "$CONF_FILE"
+		echo "DISABLE_LOGGING=false" >> "$CONF_FILE"
 	fi
 }
 
@@ -650,7 +650,7 @@ API_CALL_CONNECT_TIMEOUT_SEC=5
 API_CALL_TIMEOUT_SEC=60
 API_CALL_RETRIES=1
 
-LOG_FILE="$HOME/.${SELF}.log"
+LOG_FILE="$CONF_ROOT/log"
 
 AUTO_DELETE_DELAY=""  # if set, uploaded image(s) will be deleted after this delay
 
