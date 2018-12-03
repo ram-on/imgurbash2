@@ -34,7 +34,7 @@
 set -a
 
 readonly SELF=${0##*/}
-readonly VERSION="3.0"
+readonly VERSION="3.1"
 readonly CONF_ROOT="$HOME/.config/imgurbash2"
 readonly CONF_FILE="$CONF_ROOT/config"
 readonly CREDENTIALS_FILE="$CONF_ROOT/credentials.conf"
@@ -364,7 +364,7 @@ err() {
 
 	if [[ $DISABLE_LOGGING != true ]]; then
 		if [[ "$no_log" -ne 1 ]]; then
-			echo "    ERROR ["$(date '+%Y-%m-%dT%H:%M:%S')" - $JOB_ID]  $msg" >> "$LOG_FILE"
+			echo "ERROR ["$(date '+%Y-%m-%dT%H:%M:%S')" - $JOB_ID]  $msg" >> "$LOG_FILE"
 		fi
 	fi
 }
