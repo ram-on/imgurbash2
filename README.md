@@ -74,11 +74,11 @@ yay -S imgurbash2
 ```
 
 ## Dependencies
-| Program            | Optional | Reason |
-| ------------------ | -------- | ------------- |
-| `bash` 4.0+        | No       | To run this script.  Given that macOS ships with an old Bash version, it is recommended that the latest Bash is installed via `brew install bash`  |
-| `curl`             | No       | Uploads images  |
-| `xsel` or `xclip`  | Yes      | Copies URL (image) link to clipboard if using Linux - no separate program is required for macOS |
+| Program                      | Optional | Reason |
+| ---------------------------- | -------- | ------------- |
+| `bash` 4.0+                  | No       | To run this script.  Given that macOS ships with an old Bash version, it is recommended that the latest Bash is installed via `brew install bash`  |
+| `curl`                       | No       | Uploads images  |
+| `xsel`, `xclip` or `wl-copy` | Yes      | Copies URL (image) link to clipboard if using Linux - no separate program is required for macOS |
 
 
 ## License

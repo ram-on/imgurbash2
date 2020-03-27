@@ -27,8 +27,8 @@ http://i.imgur.com/HDVh123.png (Delete Hash = wef2q3r)
 
 ```
 The first link is the URL of the uploaded image. This URL is copied to you clipboard
-and hence you can use <kbd>CTRL</kbd>+<kbd>V</kbd> to paste it (provided that `xsel`
-or `xclip` is installed on Linux - no separate program is required for macOS).
+and hence you can use <kbd>CTRL</kbd>+<kbd>V</kbd> to paste it (provided that `xsel`, `xclip`
+or `wl-copy` is installed on Linux - no separate program is required for macOS).
 
 
 ### Upload Remote Images
