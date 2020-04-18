@@ -170,16 +170,16 @@ upload_image() {
 	[[ -n "$ALBUM_ID" ]] && hdrs+=('-F' "album=$ALBUM_ID")
 
 	if [[ -f "$file" ]]; then
-		hdrs+=('-F' "image=@$file")
+		hdrs+=('-F' "${TYPE}=@$file")
 	elif is_valid_url "$file"; then
 		# TODO: only works when album_id not defined?
-		hdrs+=('--data-urlencode' "image=$file")
+		hdrs+=('--data-urlencode' "${TYPE}=$file")
 	else
 		# file does NOT exist...
 		return 1
 	fi
 
-	api_call -r image "${hdrs[@]}"
+	api_call -r upload "${hdrs[@]}"
 }
 
 
@@ -645,6 +645,7 @@ setup
 ############# START CONFIG #############
 LOGIN=false  # true if we should authenticate with our own user.
 ALBUM_ID=""
+TYPE=image
 
 API_CALL_CONNECT_TIMEOUT_SEC=5
 API_CALL_TIMEOUT_SEC=60
@@ -671,6 +672,8 @@ while [[ "$1" == -* ]]; do
 			TITLE="$2"; shift 2 ;;
 		-l|--login)
 			LOGIN="true"; shift 1 ;;
+		-V|--video)
+			TYPE=video; shift 1 ;;
 		-D|--auto-delete)
 			sanitize_auto_delete_delay "$2";  shift 2 ;;
 		-h|--help)
