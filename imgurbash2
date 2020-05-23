@@ -34,7 +34,7 @@
 set -a
 
 readonly SELF=${0##*/}
-readonly VERSION="3.1"
+readonly VERSION="3.2"
 readonly CONF_ROOT="$HOME/.config/imgurbash2"
 readonly CONF_FILE="$CONF_ROOT/config"
 readonly CREDENTIALS_FILE="$CONF_ROOT/credentials.conf"
