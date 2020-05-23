@@ -25,10 +25,10 @@
 #           Config & auth logic inspired by https://github.com/jomo/imgur-screenshot/
 # REQUIRED: curl
 # OPTIONAL:
-#    * xsel or xclip for copying URLs to your clipboard (Linux)
+#    * xsel, xclip or wl-copy for copying URLs to your clipboard (Linux)
 #--------------------------------------------------------------------
 #
-# The URLs will be output on your terminal. If you have xsel or xclip they
+# The URLs will be output on your terminal. If you have xsel, xclip or wl-copy they
 # will also be copied on clipboard, which you can usually paste with a CTRL-V.
 
 set -a
@@ -236,7 +236,8 @@ copy_to_clipboard() {
 	elif [[ -n "$DISPLAY" ]]; then
 		{ command -v xsel &>/dev/null && echo -n "$input" | xsel --input --clipboard; } \
 			|| { command -v xclip &>/dev/null && echo -n "$input" | xclip -selection clipboard; } \
-			|| info -L "Didn't copy to clipboard:  xsel or xclip are not installed."
+			|| { command -v wl-copy &>/dev/null && echo -n "$input" | wl-copy; } \
+			|| info -L "Didn't copy to clipboard:  xsel, xclip or wl-copy are not installed."
 	else
 		info -L "Didn't copy to the clipboard:  no \$DISPLAY"
 	fi
