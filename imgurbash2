@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Copyright (c) 2016-2018 Ramon <https://github.com/ram-on/imgurbash2>
+#
+# Copyright (c) 2016-2022 Ramon <https://github.com/ram-on/imgurbash2>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,30 +20,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-#--------------------------------------------------------------------
+#------------------------------------------------------------------------------
+# ABOUT:    imgurbash2 is a simple bash script that allows you to upload images
+#           to imgur.  Once an image is uploaded, the link is displayed in your 
+#           terminal and copied to your clipboard.
+# MANUAL:   https://github.com/ram-on/imgurbash2/blob/master/examples.md
 # AUTHORS:  Ramon <https://github.com/ram-on/imgurbash2>
 #           Originally written by Bart Nagel <bart@tremby.net>
 #           Config & auth logic inspired by https://github.com/jomo/imgur-screenshot/
-# REQUIRED: curl
-# OPTIONAL:
-#    * xsel, xclip or wl-copy for copying URLs to your clipboard (Linux)
-#--------------------------------------------------------------------
+# REQUIRED: bash 4.0+, curl
+# OPTIONAL: xsel, xclip or wl-copy for copying URLs to your clipboard (Linux)
+#------------------------------------------------------------------------------
 #
-# The URLs will be output on your terminal. If you have xsel, xclip or wl-copy they
-# will also be copied on clipboard, which you can usually paste with a CTRL-V.
 
 set -a
 
 readonly SELF=${0##*/}
-readonly VERSION="3.2"
+readonly VERSION="3.3"
 readonly CONF_ROOT="$HOME/.config/imgurbash2"
 readonly CONF_FILE="$CONF_ROOT/config"
 readonly CREDENTIALS_FILE="$CONF_ROOT/credentials.conf"
 readonly ANON_CLIENT_ID=4f0d009df8e7de6  # client_id to use for non-authenticated operations
 readonly TOKEN_URL="https://api.imgur.com/oauth2/token"
 readonly JOB_ID="$$"
-uname | grep -q Darwin && IS_MACOS=true || IS_MACOS=false
-uname | grep -q Linux && IS_LINUX=true || IS_LINUX=false
+uname    | grep -q Darwin && IS_MACOS=true || IS_MACOS=false
+uname    | grep -q Linux  && IS_LINUX=true || IS_LINUX=false
+uname -r | grep -q WSL    && IS_WSL=true   || IS_WSL=false
 
 HAS_ERRORS=0  # flag indicating if any errors were encountered
 
@@ -232,7 +235,9 @@ copy_to_clipboard() {
 	input="$(printf "${1// /\\n}")"
 
 	if [[ "$IS_MACOS" == true ]]; then
-		pbcopy <<< "$input"
+		echo -n "$input" | pbcopy
+	elif [[ "$IS_WSL" == true ]]; then 
+		echo -n "$input" | clip.exe
 	elif [[ -n "$DISPLAY" ]]; then
 		{ command -v xsel &>/dev/null && echo -n "$input" | xsel --input --clipboard; } \
 			|| { command -v xclip &>/dev/null && echo -n "$input" | xclip -selection clipboard; } \
