@@ -5,6 +5,7 @@
 * [Examples](#examples)
 	* [Upload Local Images](#upload-local-images)
 	* [Upload Remote Images](#upload-remote-images)
+	* [Upload Videos and Images](#upload-videos-and-images)
 	* [Upload to Your Album](#upload-to-your-album)
 	* [Upload to Your Account](#upload-to-your-account)
 	* [Add Title To Images](#add-title-to-images)
@@ -38,6 +39,16 @@ will upload a remote image fish.png and (local image) lion.png
 ```bash
 imgurbash2  https://myserver.org/fish.png  ~/tmp/lion.jpg
 ```
+
+
+### Upload Videos and Images
+
+You can upload local/remote images/videos to imgur:
+```bash
+imgurbash2 cat.jpeg ~/Pictures/khajiit.mp4 http://mylameserver.lan/coins.mpeg
+```
+
+**NOTE: The below examples apply to both images and videos.**
 
 
 ### Upload to Your Album

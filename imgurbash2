@@ -22,11 +22,10 @@
 #
 #------------------------------------------------------------------------------
 # ABOUT:    imgurbash2 is a simple bash script that allows you to upload images
-#           to imgur.  Once an image is uploaded, the link is displayed in your 
-#           terminal and copied to your clipboard.
+#           and videos to imgur.  Once an image/video is uploaded, the link is 
+#           displayed in your terminal and copied to your clipboard.
 # MANUAL:   https://github.com/ram-on/imgurbash2/blob/master/examples.md
 # AUTHORS:  Ramon <https://github.com/ram-on/imgurbash2>
-#           Originally written by Bart Nagel <bart@tremby.net>
 #           Config & auth logic inspired by https://github.com/jomo/imgur-screenshot/
 # REQUIRED: bash 4.0+, curl
 # OPTIONAL: xsel, xclip or wl-copy for copying URLs to your clipboard (Linux)
@@ -43,9 +42,9 @@ readonly CREDENTIALS_FILE="$CONF_ROOT/credentials.conf"
 readonly ANON_CLIENT_ID=4f0d009df8e7de6  # client_id to use for non-authenticated operations
 readonly TOKEN_URL="https://api.imgur.com/oauth2/token"
 readonly JOB_ID="$$"
-uname    | grep -q Darwin && IS_MACOS=true || IS_MACOS=false
-uname    | grep -q Linux  && IS_LINUX=true || IS_LINUX=false
-uname -r | grep -q WSL    && IS_WSL=true   || IS_WSL=false
+uname    | grep -q Darwin && readonly IS_MACOS=true || readonly IS_MACOS=false
+uname    | grep -q Linux  && readonly IS_LINUX=true || readonly IS_LINUX=false
+uname -r | grep -q WSL    && readonly IS_WSL=true   || readonly IS_WSL=false
 
 HAS_ERRORS=0  # flag indicating if any errors were encountered
 
@@ -64,39 +63,39 @@ usage() {
 	local linux_auto_delete_msg
 
 	echo "
-Uploads images to imgur and output their imgurl URL link. It can also delete
-previously uploaded images.
+Uploads images and videos to imgur and output their imgur URL link. It can also
+delete previously uploaded images/videos.
 
 The URL links are then copied to your clipboard, given required dependencies are
 found.
 
 ${COLORS[GREEN]}Usage:${COLORS[OFF]}
-    ${SELF} [options] <image1> [image2...]
+    ${SELF} [options] <file1> [file2...]
 
 ${COLORS[GREEN]}Where:${COLORS[OFF]}
-    image* is a local file (e.g. ~/text.png) or a remote image (e.g.
-    http://domain/myimage.png).
+    file* is a local image/video file (e.g. ~/text.png) or a remote image/video
+    (e.g. http://domain/movie.mp4).
 
 ${COLORS[GREEN]}Options:${COLORS[OFF]}
     ${COLORS[GREEN]}-d, --delete${COLORS[OFF]} <delete_hash1> [delete_hash2...]
-        Deletes image(s) based on supplied delete hash.  The delete hash is
-        outputted when the user uploads an image.
+        Deletes image/videos(s) based on supplied delete hash.  The delete hash 
+        is outputted when the user uploads an image/video.
     ${COLORS[GREEN]}-D, --auto-delete${COLORS[OFF]} <delay>
         Where <delay> is how long we should wait before deletion in seconds.
         Also accepts [smhdwM] suffix, where 's' for seconds (the default), 'm'
         for minutes, 'h' for hours, 'd' for days, 'w' for weeks and 'M' for
-        months.  E.g. '30m' means delete the image after 30 minutes.
+        months.  E.g. '30m' means delete the image/video after 30 minutes.
         NOTE:  The deletion will be executed by backgrounded shell process,
         which means it assumes your computer won't be halted/suspended before
         the time has elapsed, and you still have external connection in order to
         call imgur API.
     ${COLORS[GREEN]}-l, --login${COLORS[OFF]}
-        State that authenticated operation is required.  Used to upload images
-        to your personal album/account.
+        State that authenticated operation is required.  Used to upload images/
+        videos to your personal album/account.
     ${COLORS[GREEN]}-a, --album-id${COLORS[OFF]} <id>
-        ID of the album which will host the uploaded image.
+        ID of the album which will host the uploaded image/video.
     ${COLORS[GREEN]}-t, --title${COLORS[OFF]} <title>
-        Title for the image(s) to be uploaded.
+        Title for the image/video(s) to be uploaded.
     ${COLORS[GREEN]}-h, --help${COLORS[OFF]}
         Displays this help.
     ${COLORS[GREEN]}-v, --version${COLORS[OFF]}
@@ -157,9 +156,9 @@ api_call() {
 }
 
 
-# Uploads given image to imgur.
+# Uploads given image/video to imgur.
 #
-# @param {string}		file path to local image file, or external URL.
+# @param {string}		file path to local image/video file, or external URL.
 #
 # @returns {string}		response body, as returned by curl; return 1 if the file
 #						supplied does not exist.
@@ -173,16 +172,17 @@ upload_image() {
 	[[ -n "$ALBUM_ID" ]] && hdrs+=('-F' "album=$ALBUM_ID")
 
 	if [[ -f "$file" ]]; then
+		hdrs+=('-F' "type=file")
 		hdrs+=('-F' "image=@$file")
 	elif is_valid_url "$file"; then
-		# TODO: only works when album_id not defined?
-		hdrs+=('--data-urlencode' "image=$file")
+		hdrs+=('-F' "type=url")
+		hdrs+=('-F' "image=$file")
 	else
 		# file does NOT exist...
 		return 1
 	fi
 
-	api_call -r image "${hdrs[@]}"
+	api_call -r upload "${hdrs[@]}"
 }
 
 
@@ -249,7 +249,7 @@ copy_to_clipboard() {
 }
 
 
-# Uploads given image(s) to imgur.  URLs are then copied to clipboard
+# Uploads given image/video(s) to imgur.  URLs are then copied to clipboard
 #
 # @param {string...}  files  files to upload.
 #
@@ -260,7 +260,7 @@ upload_images() {
 	declare -a files=("$@")
 
 	for file in "${files[@]}"; do
-		# upload image to imgur
+		# upload image/video to imgur
 		response="$(upload_image "$file")"
 
 		# upload_image() returns 1 if the file does not exist
@@ -277,14 +277,14 @@ upload_images() {
 			continue;
 		fi
 
-		# get image url link
+		# get image/video url link
 		url="$(parse_str_field "$response" link | sed -e 's/\\//g')"
-		is_valid_url "$url" || err "Uploaded image resulted in [$url] link"
+		is_valid_url "$url" || err "Uploaded image/video resulted in [$url] link"
 		dhash="$(parse_str_field "$response" deletehash)"
-		[[ -z "$dhash" ]] && err "No deletehash found in image [$file] upload response [$response]"
+		[[ -z "$dhash" ]] && err "No deletehash found in image/video [$file] upload response [$response]"
 
 		if [[ -n "$AUTO_DELETE_DELAY" ]]; then
-			info "$url (Deleting image in $AUTO_DELETE_DELAY)"
+			info "$url (Deleting image/video in $AUTO_DELETE_DELAY)"
 			nohup /usr/bin/env bash -c "sleep $AUTO_DELETE_DELAY_SEC && delete_image_auto '$dhash' '$url'" &>/dev/null &
 		else
 			info "$url (Delete Hash = $dhash)"
@@ -297,9 +297,9 @@ upload_images() {
 }
 
 
-# Deletes uploaded images corresponding to supplied deletehashes.
+# Deletes uploaded images/videos corresponding to supplied deletehashes.
 #
-# @param {string...}  hashes  imgur image deletion hashes.
+# @param {string...}  hashes  imgur image/video deletion hashes.
 #
 # @returns {void}
 delete_images() {
@@ -308,7 +308,7 @@ delete_images() {
 	declare -a hashes=("$@")
 
 	for hash in "${hashes[@]}"; do
-		# delete the image from imgur
+		# delete the image/video from imgur
 		response="$(api_call -r "image/${hash}" -X DELETE)"
 
 		# analyze the request status
@@ -509,7 +509,7 @@ init_auth() {
 		sed -e 's#.*'$1'=\([^&]*\).*#\1#' <<< "$url"
 	}
 
-	echo "Account authentication is required to upload images to you account and to your
+	echo "Account authentication is required to upload images/videos to you account and to your
 personal albums.  In order to authenticate you need to visit
 ${COLORS[CYAN]}https://api.imgur.com/oauth2/addclient${COLORS[OFF]} and then register this application by:
 1. Filling in the 'Application Name' and 'Email' fields; and
