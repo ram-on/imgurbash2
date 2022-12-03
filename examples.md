@@ -34,7 +34,8 @@ http://i.imgur.com/HDVh123.png (Delete Hash = wef2q3r)
 The first link is the URL of the uploaded image. This URL is copied to you 
 clipboard and hence you can use <kbd>CTRL</kbd>+<kbd>V</kbd> (or 
 <kbd>⌘</kbd>+<kbd>V</kbd>) to paste it (provided that `xsel`, `xclip` or 
-`wl-copy` is installed on Linux - no separate program is required for macOS).
+`wl-copy` is installed on Linux - no separate program is required for macOS
+or Windows).
 
 
 ### Upload Remote Images
@@ -87,7 +88,7 @@ To get your album ID:
 
 1.  Go to `https://imgur.com/user/<your_username>/posts`
 2.  Within the "all" section, [click on the album](https://imgur.com/LLzZqFc) where you want to upload the image.
-3.  The album should be displayed and it should contain the album ID.  E.g. https://imgur.com/a/albumid, thus the album ID is "albumid".
+3.  The album should be displayed and it should contain the album ID (e.g. https://imgur.com/a/albumid, thus the album ID is "albumid").
 
 **NOTE 2**:  The `-l` or `--login` argument is required in order to authenticate
 and upload to your album.  If this is the first time running the 
