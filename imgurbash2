@@ -279,6 +279,7 @@ upload_images() {
 
 		# get image/video url link
 		url="$(parse_str_field "$response" link | sed -e 's/\\//g')"
+url="${url%.}"
 		is_valid_url "$url" || err "Uploaded image/video resulted in [$url] link"
 		dhash="$(parse_str_field "$response" deletehash)"
 		[[ -z "$dhash" ]] && err "No deletehash found in image/video [$file] upload response [$response]"
