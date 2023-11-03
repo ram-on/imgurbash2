@@ -76,7 +76,8 @@ Details about the configuration file are also explained.
 
 ## Installation
 
-* [Arch Linux / Manjaro](https://aur.archlinux.org/packages/imgurbash2)
+* [Arch Linux / EndeavourOS / Manjaro](https://aur.archlinux.org/packages/imgurbash2)
+* [FreeBSD](https://www.freshports.org/sysutils/imgurbash2/)
 * [Gentoo](https://packages.gentoo.org/packages/app-misc/imgurbash2)
 * [NixOS](https://search.nixos.org/packages?show=imgurbash2&type=packages)
 
